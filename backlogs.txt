@@ -1,0 +1,26 @@
+		if err != nil {
+			r_cmd := exec.Command("docker", "rm", "-f", container_name)
+			err = r_cmd.Run()
+
+			if err != nil {
+				rmi_cmd := exec.Command("docker", "rmi", "-f", container_image)
+				err = rmi_cmd.Run()
+
+				if err != nil {
+					pull_cmd := exec.Command("docker", "pull", container_image)
+					err = pull_cmd.Run()
+					if err != nil {
+						resp = createContainer(container_image, container_name, r.FormValue("network"),
+							r.FormValue("port_ex"), r.FormValue("port_in"), r.FormValue("volume_ex"), r.FormValue("volume_ex"), r.FormValue("v_map"))
+					} else {
+						resp = "Error by pulling container image!"
+					}
+				} else {
+					resp = "Error by removing the container image!"
+				}
+			} else {
+				resp = "Error by removing the container!"
+			}
+		} else {
+			resp = "Error by stopping the container!"
+		}
