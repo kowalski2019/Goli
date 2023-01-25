@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	aux "deployer/auxiliary"
+	"errors"
 	"fmt"
 	"net/http"
 	"os/exec"
@@ -11,9 +12,19 @@ import (
 
 var auth_key = aux.GetFromConfig("constants.auth_key")
 
-func SendResponse(w http.ResponseWriter, res string) {
+func SendOkResponse(w http.ResponseWriter, res string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`["` + res + `"]`))
+}
+func SendUnauthorizedResponse(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusUnauthorized)
+	w.Write([]byte(`{"message": "Unauthorized"}`))
+}
+func SendInternalServerErrorResponse(w http.ResponseWriter, res string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusInternalServerError)
 	w.Write([]byte(`["` + res + `"]`))
 }
 
@@ -21,9 +32,7 @@ func verifyAuth(w http.ResponseWriter, givenAuthKey string) bool {
 	if givenAuthKey == auth_key {
 		return true
 	} else {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"message": "Unauthorized"}`))
+		SendUnauthorizedResponse(w)
 		return false
 	}
 }
@@ -35,20 +44,12 @@ func StartADocker(w http.ResponseWriter, r *http.Request) {
 	}
 	//params := mux.Vars(r)
 	containerName := r.FormValue("name")
-	cmd := exec.Command("docker", "start", containerName)
-	var out bytes.Buffer
-	var err0 bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &err0
-	err := cmd.Run()
-
-	res := ""
+	res, err := DoDockerContainerAction(containerName, "start")
 	if err != nil {
-		res = err0.String()
-	} else {
-		res = out.String()
+		SendInternalServerErrorResponse(w, err.Error())
+		return
 	}
-	SendResponse(w, res)
+	SendOkResponse(w, res)
 }
 
 func StopADocker(w http.ResponseWriter, r *http.Request) {
@@ -58,21 +59,12 @@ func StopADocker(w http.ResponseWriter, r *http.Request) {
 	}
 	//params := mux.Vars(r)
 	containerName := r.FormValue("name")
-	cmd := exec.Command("docker", "stop", containerName)
-	var out bytes.Buffer
-	var err0 bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &err0
-	err := cmd.Run()
-
-	res := ""
+	res, err := DoDockerContainerAction(containerName, "stop")
 	if err != nil {
-		res = err0.String()
-	} else {
-		res = out.String()
+		SendInternalServerErrorResponse(w, err.Error())
+		return
 	}
-	SendResponse(w, res)
-
+	SendOkResponse(w, res)
 }
 
 func RemoveADocker(w http.ResponseWriter, r *http.Request) {
@@ -82,21 +74,12 @@ func RemoveADocker(w http.ResponseWriter, r *http.Request) {
 	}
 	//params := mux.Vars(r)
 	containerName := r.FormValue("name")
-	cmd := exec.Command("docker", "rm", "-f", containerName)
-	var out bytes.Buffer
-	var err0 bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &err0
-	err := cmd.Run()
-
-	res := ""
+	res, err := DoDockerContainerAction(containerName, "rm")
 	if err != nil {
-		res = err0.String()
-	} else {
-		res = out.String()
+		SendInternalServerErrorResponse(w, err.Error())
+		return
 	}
-	SendResponse(w, res)
-
+	SendOkResponse(w, res)
 }
 
 func PauseADocker(w http.ResponseWriter, r *http.Request) {
@@ -106,21 +89,12 @@ func PauseADocker(w http.ResponseWriter, r *http.Request) {
 	}
 	//params := mux.Vars(r)
 	containerName := r.FormValue("name")
-	cmd := exec.Command("docker", "pause", containerName)
-	var out bytes.Buffer
-	var err0 bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &err0
-	err := cmd.Run()
-
-	res := ""
+	res, err := DoDockerContainerAction(containerName, "pause")
 	if err != nil {
-		res = err0.String()
-	} else {
-		res = out.String()
+		SendInternalServerErrorResponse(w, err.Error())
+		return
 	}
-	SendResponse(w, res)
-
+	SendOkResponse(w, res)
 }
 
 func UnPauseADocker(w http.ResponseWriter, r *http.Request) {
@@ -130,21 +104,12 @@ func UnPauseADocker(w http.ResponseWriter, r *http.Request) {
 	}
 	//params := mux.Vars(r)
 	containerName := r.FormValue("name")
-	cmd := exec.Command("docker", "unpause", containerName)
-	var out bytes.Buffer
-	var err0 bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &err0
-	err := cmd.Run()
-
-	res := ""
+	res, err := DoDockerContainerAction(containerName, "unpause")
 	if err != nil {
-		res = err0.String()
-	} else {
-		res = out.String()
+		SendInternalServerErrorResponse(w, err.Error())
+		return
 	}
-	SendResponse(w, res)
-
+	SendOkResponse(w, res)
 }
 
 func InspectADocker(w http.ResponseWriter, r *http.Request) {
@@ -154,20 +119,12 @@ func InspectADocker(w http.ResponseWriter, r *http.Request) {
 	}
 	//params := mux.Vars(r)
 	containerName := r.FormValue("name")
-	cmd := exec.Command("docker", "inspect", containerName)
-	var out bytes.Buffer
-	var err0 bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &err0
-	err := cmd.Run()
-
-	res := ""
+	res, err := DoDockerContainerAction(containerName, "inspect")
 	if err != nil {
-		res = err0.String()
-	} else {
-		res = out.String()
+		SendInternalServerErrorResponse(w, err.Error())
+		return
 	}
-	SendResponse(w, res)
+	SendOkResponse(w, res)
 }
 
 func GetADockerLogs(w http.ResponseWriter, r *http.Request) {
@@ -177,40 +134,31 @@ func GetADockerLogs(w http.ResponseWriter, r *http.Request) {
 	}
 	//params := mux.Vars(r)
 	containerName := r.FormValue("name")
-	cmd := exec.Command("docker", "logs", containerName)
-	var out bytes.Buffer
-	var err0 bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &err0
-	err := cmd.Run()
-
-	res := ""
+	res, err := DoDockerContainerAction(containerName, "logs")
 	if err != nil {
-		res = err0.String()
-	} else {
-		res = out.String()
+		SendInternalServerErrorResponse(w, err.Error())
+		return
 	}
-	SendResponse(w, res)
+	SendOkResponse(w, res)
 }
+
 func GetDockerPS(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	if !verifyAuth(w, r.FormValue("auth_key")) {
 		return
 	}
 	cmd := exec.Command("docker", "ps", "-a")
-	res := "Nothing!"
 	var out bytes.Buffer
-	var err1 bytes.Buffer
+	var err0 bytes.Buffer
 	cmd.Stdout = &out
-	cmd.Stderr = &err1
+	cmd.Stderr = &err0
 	err := cmd.Run()
 
 	if err != nil {
-		res = err1.String()
-	} else {
-		res = out.String()
+		SendInternalServerErrorResponse(w, err0.String())
+		return
 	}
-	SendResponse(w, res)
+	SendOkResponse(w, out.String())
 }
 
 func GetDockerImages(w http.ResponseWriter, r *http.Request) {
@@ -219,19 +167,18 @@ func GetDockerImages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cmd := exec.Command("docker", "images")
-	res := "Nothing!"
 	var out bytes.Buffer
-	var err1 bytes.Buffer
+	var err0 bytes.Buffer
 	cmd.Stdout = &out
-	cmd.Stderr = &err1
+	cmd.Stderr = &err0
 	err := cmd.Run()
 
 	if err != nil {
-		res = err1.String()
-	} else {
-		res = out.String()
+		SendInternalServerErrorResponse(w, err0.String())
+		return
 	}
-	SendResponse(w, res)
+	SendOkResponse(w, out.String())
+
 }
 func RemoveAnDockerImage(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
@@ -240,20 +187,12 @@ func RemoveAnDockerImage(w http.ResponseWriter, r *http.Request) {
 	}
 	//params := mux.Vars(r)
 	imageName := r.FormValue("image")
-	cmd := exec.Command("docker", "rmi", "-f", imageName)
-	var out bytes.Buffer
-	var err0 bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &err0
-	err := cmd.Run()
-
-	res := ""
+	res, err := DoDockerImageAction(imageName, "rm")
 	if err != nil {
-		res = err0.String()
-	} else {
-		res = out.String()
+		SendInternalServerErrorResponse(w, err.Error())
+		return
 	}
-	SendResponse(w, res)
+	SendOkResponse(w, res)
 }
 
 func PullAnDockerImage(w http.ResponseWriter, r *http.Request) {
@@ -263,20 +202,12 @@ func PullAnDockerImage(w http.ResponseWriter, r *http.Request) {
 	}
 	//params := mux.Vars(r)
 	imageName := r.FormValue("image")
-	cmd := exec.Command("docker", "pull", imageName)
-	var out bytes.Buffer
-	var err0 bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &err0
-	err := cmd.Run()
-
-	res := ""
+	res, err := DoDockerImageAction(imageName, "pull")
 	if err != nil {
-		res = err0.String()
-	} else {
-		res = out.String()
+		SendInternalServerErrorResponse(w, err.Error())
+		return
 	}
-	SendResponse(w, res)
+	SendOkResponse(w, res)
 }
 
 func RunDockerContainer(w http.ResponseWriter, r *http.Request) {
@@ -287,55 +218,62 @@ func RunDockerContainer(w http.ResponseWriter, r *http.Request) {
 	container_name := r.FormValue("name")
 	container_image := r.FormValue("image")
 	container_exists := checkDockerExistence(container_name)
-	resp := ""
 
 	if !container_exists {
 		fmt.Println("Container does not exist we have to create a new one")
-		resp = createContainer(container_image, container_name, r.FormValue("network"),
+		res, err := createContainer(container_image, container_name, r.FormValue("network"),
 			r.FormValue("port_ex"), r.FormValue("port_in"), r.FormValue("volume_ex"), r.FormValue("volume_ex"), r.FormValue("v_map"))
+		if err != nil {
+			SendInternalServerErrorResponse(w, err.Error())
+		} else {
+			SendOkResponse(w, res)
+		}
 	} else {
 		fmt.Println("Container already exists\n We have to kill first and create a new one")
-		//var err error
-		s_cmd := exec.Command("docker", "stop", container_name)
-		s_cmd.Run()
-
-		r_cmd := exec.Command("docker", "rm", "-f", container_name)
-		r_cmd.Run()
-
-		rmi_cmd := exec.Command("docker", "rmi", "-f", container_image)
-		rmi_cmd.Run()
-
-		pull_cmd := exec.Command("docker", "pull", container_image)
-		pull_cmd.Run()
-
-		resp = createContainer(container_image, container_name, r.FormValue("network"),
-			r.FormValue("port_ex"), r.FormValue("port_in"), r.FormValue("volume_ex"), r.FormValue("volume_ex"), r.FormValue("v_map"))
-
-	}
-
-	SendResponse(w, resp)
-}
-
-/*
-	func checkDockerImageExistence(name string) bool {
-		cmd := exec.Command("docker", "container", "logs", name)
-		var out bytes.Buffer
-		var err1 bytes.Buffer
-		cmd.Stdout = &out
-		cmd.Stderr = &err1
-		err := cmd.Run()
-
+		final_res := ""
+		res1, err := DoDockerContainerAction(container_name, "stop")
 		if err != nil {
-			return false
+			SendInternalServerErrorResponse(w, err.Error())
+			return
 		} else {
-			if strings.Contains(out.String(), "No such container") {
-				return false
+			final_res += res1
+			res2, err := DoDockerContainerAction(container_name, "rm")
+			if err != nil {
+				SendInternalServerErrorResponse(w, err.Error())
+				return
 			} else {
-				return true
+				final_res += res2
+				res3, err := DoDockerImageAction(container_image, "rm")
+				if err != nil {
+					SendInternalServerErrorResponse(w, err.Error())
+					return
+				} else {
+					final_res += res3
+					res4, err := DoDockerImageAction(container_image, "pull")
+					if err != nil {
+						SendInternalServerErrorResponse(w, err.Error())
+						return
+					} else {
+						final_res += res4
+					}
+				}
 			}
 		}
+
+		res5, err := createContainer(container_image, container_name, r.FormValue("network"),
+			r.FormValue("port_ex"), r.FormValue("port_in"), r.FormValue("volume_ex"), r.FormValue("volume_ex"), r.FormValue("v_map"))
+
+		if err != nil {
+			SendInternalServerErrorResponse(w, err.Error())
+		} else {
+			final_res += res5
+			SendOkResponse(w, final_res)
+		}
+
 	}
-*/
+
+}
+
 func checkDockerExistence(name string) bool {
 	cmd := exec.Command("docker", "container", "logs", name)
 	var out bytes.Buffer
@@ -355,9 +293,135 @@ func checkDockerExistence(name string) bool {
 	}
 }
 
-/**
- */
-func createContainer(image string, name string, network string, port_ex string, port_in string, volume_ex string, volume_in string, v_map string) string {
+func DoDockerContainerAction(container string, action string) (string, error) {
+
+	var out bytes.Buffer
+	var err0 bytes.Buffer
+
+	switch action {
+	case "start":
+		{
+			cmd := exec.Command("docker", "start", container)
+			cmd.Stdout = &out
+			cmd.Stderr = &err0
+			err := cmd.Run()
+			if err != nil {
+				return "", err
+			} else {
+				return out.String(), nil
+			}
+		}
+	case "stop":
+		{
+			cmd := exec.Command("docker", "stop", container)
+			cmd.Stdout = &out
+			cmd.Stderr = &err0
+			err := cmd.Run()
+			if err != nil {
+				return "", err
+			} else {
+				return out.String(), nil
+			}
+		}
+	case "rm":
+		{
+			cmd := exec.Command("docker", "rm", "-f", container)
+			cmd.Stdout = &out
+			cmd.Stderr = &err0
+			err := cmd.Run()
+			if err != nil {
+				return "", err
+			} else {
+				return out.String(), nil
+			}
+		}
+	case "pause":
+		{
+			cmd := exec.Command("docker", "pause", container)
+			cmd.Stdout = &out
+			cmd.Stderr = &err0
+			err := cmd.Run()
+			if err != nil {
+				return "", err
+			} else {
+				return out.String(), nil
+			}
+		}
+	case "unpause":
+		{
+			cmd := exec.Command("docker", "unpause", container)
+			cmd.Stdout = &out
+			cmd.Stderr = &err0
+			err := cmd.Run()
+			if err != nil {
+				return "", err
+			} else {
+				return out.String(), nil
+			}
+		}
+	case "inspect":
+		{
+			cmd := exec.Command("docker", "inspect", container)
+			cmd.Stdout = &out
+			cmd.Stderr = &err0
+			err := cmd.Run()
+			if err != nil {
+				return "", err
+			} else {
+				return out.String(), nil
+			}
+		}
+	case "logs":
+		{
+			cmd := exec.Command("docker", "logs", container)
+			cmd.Stdout = &out
+			cmd.Stderr = &err0
+			err := cmd.Run()
+			if err != nil {
+				return "", err
+			} else {
+				return out.String(), nil
+			}
+		}
+	}
+	return "", errors.New("unknown action")
+}
+
+func DoDockerImageAction(image string, action string) (string, error) {
+
+	var out bytes.Buffer
+	var err0 bytes.Buffer
+
+	switch action {
+	case "rm":
+		{
+			cmd := exec.Command("docker", "rmi", "-f", image)
+			cmd.Stdout = &out
+			cmd.Stderr = &err0
+			err := cmd.Run()
+			if err != nil {
+				return "", err
+			} else {
+				return out.String(), nil
+			}
+		}
+	case "pull":
+		{
+			cmd := exec.Command("docker", "pull", image)
+			cmd.Stdout = &out
+			cmd.Stderr = &err0
+			err := cmd.Run()
+			if err != nil {
+				return "", err
+			} else {
+				return out.String(), nil
+			}
+		}
+	}
+	return "", errors.New("unknown action")
+}
+
+func createContainer(image string, name string, network string, port_ex string, port_in string, volume_ex string, volume_in string, v_map string) (string, error) {
 
 	volume_mapping := volume_ex + ":" + volume_in
 	port_mapping := port_ex + ":" + port_in
@@ -383,12 +447,8 @@ func createContainer(image string, name string, network string, port_ex string, 
 	cmd.Stderr = &err1
 	err := cmd.Run()
 
-	res := ""
 	if err != nil {
-		res = err1.String()
-	} else {
-		res = "Docker " + out.String() + " Successfully started!"
+		return "", err
 	}
-
-	return res
+	return "Docker " + out.String() + " Successfully started!", nil
 }
