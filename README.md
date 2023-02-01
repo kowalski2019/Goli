@@ -84,7 +84,7 @@ curl -d 'auth_key=dummy_key' \
 
 ```
 
-### Available API
+### Available Routers
 
 ```
         POST: /api/v1/docker/container/start 
