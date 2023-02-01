@@ -84,4 +84,22 @@ curl -d 'auth_key=dummy_key' \
 
 ```
 
+### Available API
+
+```
+        POST: /api/v1/docker/container/start 
+        POST: /api/v1/docker/container/stop
+	POST: /api/v1/docker/container/rm
+	POST: /api/v1/docker/container/run
+	POST: /api/v1/docker/container/pause
+	POST: /api/v1/docker/container/unpause
+	POST: /api/v1/docker/container/inspect
+	POST: /api/v1/docker/container/logs
+
+	POST: /api/v1/docker/image/rm
+	POST: /api/v1/docker/image/pull
+
+	POST: /api/v1/docker/ps
+	POST: /api/v1/docker/images
+```
 
