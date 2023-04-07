@@ -15,6 +15,9 @@ const port = "127.0.0.1:8125"
 func main() {
 	r := mux.NewRouter()
 	encr := r.PathPrefix("/api/v1/").Subrouter()
+	//encr.HandleFunc("/docker/compose/up", handler.StartAwakeDockers).Methods(http.MethodPost)
+	//encr.HandleFunc("/docker/compose/down", handler.StartADocker).Methods(http.MethodPost)
+
 	encr.HandleFunc("/docker/container/start", handler.StartADocker).Methods(http.MethodPost)
 	encr.HandleFunc("/docker/container/stop", handler.StopADocker).Methods(http.MethodPost)
 	encr.HandleFunc("/docker/container/rm", handler.RemoveADocker).Methods(http.MethodPost)
