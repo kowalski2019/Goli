@@ -59,7 +59,7 @@ ExecStart=/home/dummy/Deployment/action_helper/main
 ### Final steps
 
 ```
-sudo cp action-helper.service /etc/system/systemd/
+sudo cp action-helper.service /etc/systemd/system/
 
 sudo systemctl enable --now action-helper.service
 
