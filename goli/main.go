@@ -1,16 +1,18 @@
 package main
 
 import (
+	aux "deployer/auxiliary"
+	"deployer/handler"
 	"log"
 	"net/http"
-
-	"deployer/handler"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
-const port = "127.0.0.1:8125"
+var port = aux.GetFromConfig("constants.port")
+
+var host = "127.0.0.1:" + port
 
 func main() {
 	r := mux.NewRouter()
@@ -33,8 +35,8 @@ func main() {
 	encr.HandleFunc("/docker/ps", handler.GetDockerPS).Methods(http.MethodPost)
 	encr.HandleFunc("/docker/images", handler.GetDockerImages).Methods(http.MethodPost)
 
-	log.Println("Action Helper Backend is running on " + port)
-	log.Fatal(http.ListenAndServe(port, handlers.CORS(
+	log.Println("Action Helper Backend is running on " + host)
+	log.Fatal(http.ListenAndServe(host, handlers.CORS(
 		handlers.AllowedHeaders(
 			[]string{"X-Requested-With", "Content-Type", "Authorization"}),
 		handlers.AllowedMethods([]string{"GET", "POST"}), handlers.AllowedOrigins([]string{"*"}))(r)))

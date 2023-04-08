@@ -1,0 +1,14 @@
+[Unit]
+Description=Goli Github action-runner Helper for Deployment
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=work_dir
+ExecStart=exec_start
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
