@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	aux "deployer/auxiliary"
+	response_util "deployer/utils"
 	"errors"
 	"fmt"
 	"net/http"
@@ -12,27 +13,11 @@ import (
 
 var auth_key = aux.GetFromConfig("constants.auth_key")
 
-func SendOkResponse(w http.ResponseWriter, res string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`["` + res + `"]`))
-}
-func SendUnauthorizedResponse(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusUnauthorized)
-	w.Write([]byte(`{"message": "Unauthorized"}`))
-}
-func SendInternalServerErrorResponse(w http.ResponseWriter, res string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusInternalServerError)
-	w.Write([]byte(`["` + res + `"]`))
-}
-
 func verifyAuth(w http.ResponseWriter, givenAuthKey string) bool {
 	if givenAuthKey == auth_key {
 		return true
 	} else {
-		SendUnauthorizedResponse(w)
+		response_util.SendUnauthorizedResponse(w, "Wrong auth key provided")
 		return false
 	}
 }
@@ -46,10 +31,10 @@ func StartADocker(w http.ResponseWriter, r *http.Request) {
 	containerName := r.FormValue("name")
 	res, err := DoDockerContainerAction(containerName, "start")
 	if err != nil {
-		SendInternalServerErrorResponse(w, err.Error())
+		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
 	}
-	SendOkResponse(w, res)
+	response_util.SendOkResponse(w, res)
 }
 
 func StopADocker(w http.ResponseWriter, r *http.Request) {
@@ -61,10 +46,10 @@ func StopADocker(w http.ResponseWriter, r *http.Request) {
 	containerName := r.FormValue("name")
 	res, err := DoDockerContainerAction(containerName, "stop")
 	if err != nil {
-		SendInternalServerErrorResponse(w, err.Error())
+		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
 	}
-	SendOkResponse(w, res)
+	response_util.SendOkResponse(w, res)
 }
 
 func RemoveADocker(w http.ResponseWriter, r *http.Request) {
@@ -76,10 +61,10 @@ func RemoveADocker(w http.ResponseWriter, r *http.Request) {
 	containerName := r.FormValue("name")
 	res, err := DoDockerContainerAction(containerName, "rm")
 	if err != nil {
-		SendInternalServerErrorResponse(w, err.Error())
+		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
 	}
-	SendOkResponse(w, res)
+	response_util.SendOkResponse(w, res)
 }
 
 func PauseADocker(w http.ResponseWriter, r *http.Request) {
@@ -91,10 +76,10 @@ func PauseADocker(w http.ResponseWriter, r *http.Request) {
 	containerName := r.FormValue("name")
 	res, err := DoDockerContainerAction(containerName, "pause")
 	if err != nil {
-		SendInternalServerErrorResponse(w, err.Error())
+		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
 	}
-	SendOkResponse(w, res)
+	response_util.SendOkResponse(w, res)
 }
 
 func UnPauseADocker(w http.ResponseWriter, r *http.Request) {
@@ -106,10 +91,10 @@ func UnPauseADocker(w http.ResponseWriter, r *http.Request) {
 	containerName := r.FormValue("name")
 	res, err := DoDockerContainerAction(containerName, "unpause")
 	if err != nil {
-		SendInternalServerErrorResponse(w, err.Error())
+		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
 	}
-	SendOkResponse(w, res)
+	response_util.SendOkResponse(w, res)
 }
 
 func InspectADocker(w http.ResponseWriter, r *http.Request) {
@@ -121,10 +106,10 @@ func InspectADocker(w http.ResponseWriter, r *http.Request) {
 	containerName := r.FormValue("name")
 	res, err := DoDockerContainerAction(containerName, "inspect")
 	if err != nil {
-		SendInternalServerErrorResponse(w, err.Error())
+		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
 	}
-	SendOkResponse(w, res)
+	response_util.SendOkResponse(w, res)
 }
 
 func GetADockerLogs(w http.ResponseWriter, r *http.Request) {
@@ -136,10 +121,10 @@ func GetADockerLogs(w http.ResponseWriter, r *http.Request) {
 	containerName := r.FormValue("name")
 	res, err := DoDockerContainerAction(containerName, "logs")
 	if err != nil {
-		SendInternalServerErrorResponse(w, err.Error())
+		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
 	}
-	SendOkResponse(w, res)
+	response_util.SendOkResponse(w, res)
 }
 
 func GetDockerPS(w http.ResponseWriter, r *http.Request) {
@@ -155,10 +140,10 @@ func GetDockerPS(w http.ResponseWriter, r *http.Request) {
 	err := cmd.Run()
 
 	if err != nil {
-		SendInternalServerErrorResponse(w, err0.String())
+		response_util.SendInternalServerErrorResponse(w, err0.String())
 		return
 	}
-	SendOkResponse(w, out.String())
+	response_util.SendOkResponse(w, out.String())
 }
 
 func GetDockerImages(w http.ResponseWriter, r *http.Request) {
@@ -174,10 +159,10 @@ func GetDockerImages(w http.ResponseWriter, r *http.Request) {
 	err := cmd.Run()
 
 	if err != nil {
-		SendInternalServerErrorResponse(w, err0.String())
+		response_util.SendInternalServerErrorResponse(w, err0.String())
 		return
 	}
-	SendOkResponse(w, out.String())
+	response_util.SendOkResponse(w, out.String())
 
 }
 func RemoveAnDockerImage(w http.ResponseWriter, r *http.Request) {
@@ -189,10 +174,10 @@ func RemoveAnDockerImage(w http.ResponseWriter, r *http.Request) {
 	imageName := r.FormValue("image")
 	res, err := DoDockerImageAction(imageName, "rm")
 	if err != nil {
-		SendInternalServerErrorResponse(w, err.Error())
+		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
 	}
-	SendOkResponse(w, res)
+	response_util.SendOkResponse(w, res)
 }
 
 func PullAnDockerImage(w http.ResponseWriter, r *http.Request) {
@@ -204,10 +189,10 @@ func PullAnDockerImage(w http.ResponseWriter, r *http.Request) {
 	imageName := r.FormValue("image")
 	res, err := DoDockerImageAction(imageName, "pull")
 	if err != nil {
-		SendInternalServerErrorResponse(w, err.Error())
+		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
 	}
-	SendOkResponse(w, res)
+	response_util.SendOkResponse(w, res)
 }
 
 func RunDockerContainer(w http.ResponseWriter, r *http.Request) {
@@ -224,34 +209,34 @@ func RunDockerContainer(w http.ResponseWriter, r *http.Request) {
 		res, err := createContainer(container_image, container_name, r.FormValue("network"),
 			r.FormValue("port_ex"), r.FormValue("port_in"), r.FormValue("volume_ex"), r.FormValue("volume_ex"), r.FormValue("v_map"))
 		if err != nil {
-			SendInternalServerErrorResponse(w, err.Error())
+			response_util.SendInternalServerErrorResponse(w, err.Error())
 		} else {
-			SendOkResponse(w, res)
+			response_util.SendOkResponse(w, res)
 		}
 	} else {
 		fmt.Println("Container already exists\n We have to kill first and create a new one")
 		final_res := ""
 		res1, err := DoDockerContainerAction(container_name, "stop")
 		if err != nil {
-			SendInternalServerErrorResponse(w, err.Error())
+			response_util.SendInternalServerErrorResponse(w, err.Error())
 			return
 		} else {
 			final_res += res1
 			res2, err := DoDockerContainerAction(container_name, "rm")
 			if err != nil {
-				SendInternalServerErrorResponse(w, err.Error())
+				response_util.SendInternalServerErrorResponse(w, err.Error())
 				return
 			} else {
 				final_res += res2
 				res3, err := DoDockerImageAction(container_image, "rm")
 				if err != nil {
-					SendInternalServerErrorResponse(w, err.Error())
+					response_util.SendInternalServerErrorResponse(w, err.Error())
 					return
 				} else {
 					final_res += res3
 					res4, err := DoDockerImageAction(container_image, "pull")
 					if err != nil {
-						SendInternalServerErrorResponse(w, err.Error())
+						response_util.SendInternalServerErrorResponse(w, err.Error())
 						return
 					} else {
 						final_res += res4
@@ -264,10 +249,10 @@ func RunDockerContainer(w http.ResponseWriter, r *http.Request) {
 			r.FormValue("port_ex"), r.FormValue("port_in"), r.FormValue("volume_ex"), r.FormValue("volume_ex"), r.FormValue("v_map"))
 
 		if err != nil {
-			SendInternalServerErrorResponse(w, err.Error())
+			response_util.SendInternalServerErrorResponse(w, err.Error())
 		} else {
 			final_res += res5
-			SendOkResponse(w, final_res)
+			response_util.SendOkResponse(w, final_res)
 		}
 
 	}
@@ -297,128 +282,58 @@ func DoDockerContainerAction(container string, action string) (string, error) {
 
 	var out bytes.Buffer
 	var err0 bytes.Buffer
+	var cmd *exec.Cmd
 
 	switch action {
 	case "start":
-		{
-			cmd := exec.Command("docker", "start", container)
-			cmd.Stdout = &out
-			cmd.Stderr = &err0
-			err := cmd.Run()
-			if err != nil {
-				return "", err
-			} else {
-				return out.String(), nil
-			}
-		}
+		cmd = exec.Command("docker", "start", container)
 	case "stop":
-		{
-			cmd := exec.Command("docker", "stop", container)
-			cmd.Stdout = &out
-			cmd.Stderr = &err0
-			err := cmd.Run()
-			if err != nil {
-				return "", err
-			} else {
-				return out.String(), nil
-			}
-		}
+		cmd = exec.Command("docker", "stop", container)
 	case "rm":
-		{
-			cmd := exec.Command("docker", "rm", "-f", container)
-			cmd.Stdout = &out
-			cmd.Stderr = &err0
-			err := cmd.Run()
-			if err != nil {
-				return "", err
-			} else {
-				return out.String(), nil
-			}
-		}
+		cmd = exec.Command("docker", "rm", "-f", container)
 	case "pause":
-		{
-			cmd := exec.Command("docker", "pause", container)
-			cmd.Stdout = &out
-			cmd.Stderr = &err0
-			err := cmd.Run()
-			if err != nil {
-				return "", err
-			} else {
-				return out.String(), nil
-			}
-		}
+		cmd = exec.Command("docker", "pause", container)
 	case "unpause":
-		{
-			cmd := exec.Command("docker", "unpause", container)
-			cmd.Stdout = &out
-			cmd.Stderr = &err0
-			err := cmd.Run()
-			if err != nil {
-				return "", err
-			} else {
-				return out.String(), nil
-			}
-		}
+		cmd = exec.Command("docker", "unpause", container)
 	case "inspect":
-		{
-			cmd := exec.Command("docker", "inspect", container)
-			cmd.Stdout = &out
-			cmd.Stderr = &err0
-			err := cmd.Run()
-			if err != nil {
-				return "", err
-			} else {
-				return out.String(), nil
-			}
-		}
+		cmd = exec.Command("docker", "inspect", container)
 	case "logs":
-		{
-			cmd := exec.Command("docker", "logs", container)
-			cmd.Stdout = &out
-			cmd.Stderr = &err0
-			err := cmd.Run()
-			if err != nil {
-				return "", err
-			} else {
-				return out.String(), nil
-			}
-		}
+		cmd = exec.Command("docker", "logs", container)
+	default:
+		return "", errors.New("unknown action")
 	}
-	return "", errors.New("unknown action")
+	cmd.Stdout = &out
+	cmd.Stderr = &err0
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	} else {
+		return out.String(), nil
+	}
 }
 
 func DoDockerImageAction(image string, action string) (string, error) {
 
 	var out bytes.Buffer
 	var err0 bytes.Buffer
+	var cmd *exec.Cmd
 
 	switch action {
 	case "rm":
-		{
-			cmd := exec.Command("docker", "rmi", "-f", image)
-			cmd.Stdout = &out
-			cmd.Stderr = &err0
-			err := cmd.Run()
-			if err != nil {
-				return "", err
-			} else {
-				return out.String(), nil
-			}
-		}
+		cmd = exec.Command("docker", "rmi", "-f", image)
 	case "pull":
-		{
-			cmd := exec.Command("docker", "pull", image)
-			cmd.Stdout = &out
-			cmd.Stderr = &err0
-			err := cmd.Run()
-			if err != nil {
-				return "", err
-			} else {
-				return out.String(), nil
-			}
-		}
+		cmd = exec.Command("docker", "pull", image)
+	default:
+		return "", errors.New("unknown action")
 	}
-	return "", errors.New("unknown action")
+	cmd.Stdout = &out
+	cmd.Stderr = &err0
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	} else {
+		return out.String(), nil
+	}
 }
 
 func createContainer(image string, name string, network string, port_ex string, port_in string, volume_ex string, volume_in string, v_map string) (string, error) {

@@ -8,4 +8,7 @@ require (
 	github.com/laurent22/toml-go v0.0.0-20140919090424-fa06a499644c
 )
 
-require github.com/felixge/httpsnoop v1.0.1 // indirect
+require (
+	github.com/felixge/httpsnoop v1.0.1 // indirect
+	go.mongodb.org/mongo-driver v1.12.0 // indirect
+)
