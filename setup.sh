@@ -24,7 +24,8 @@ function install() {
     go_download_link="https://go.dev/dl/go1.20.3.linux-amd64.tar.gz"
     go_installer="go1.20.3.linux-amd64.tar.gz"
 
-    if [ ! $(go version 2>/dev/null) ]; then 
+    /usr/local/go/bin/go version 2>/dev/null
+    if [ $? -ne 0 ]; then 
         echo "Go does not exists!"
         echo "Downloading go ..."
     
@@ -34,10 +35,13 @@ function install() {
         [ $? -eq 0 ] && rm -rf /usr/local/go && tar -C /usr/local -xzf "/tmp/${go_installer}"
         
         echo "Installing go ..."
-        [ $? -eq 0 ] && echo 'export PATH=$PATH:/usr/local/go/bin' >> "/etc/profile"
-        [ $? -eq 0 ] && source_func && echo "null" >/dev/null
+        export PATH=$PATH:/usr/local/go/bin
+        [ $? -eq 0 ] && grep "from-go" "/etc/profile" 
+        [ $? -ne 0 ] echo 'export PATH=$PATH:/usr/local/go/bin # from-goli' >> "/etc/profile"
+        #[ $? -eq 0 ] && source_func && echo "null" >/dev/null
 
-        if [ ! $(go version 2>/dev/null) ]; then  
+        /usr/local/go/bin/go version 2>/dev/null
+        if [ $? -eq 0 ]; then  
             echo "Go successfully installed." 
         else
             echo "An error occured during the installation of 'Go' "
