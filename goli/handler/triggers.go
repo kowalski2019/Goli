@@ -5,7 +5,7 @@ import (
 	aux "deployer/auxiliary"
 	response_util "deployer/utils"
 	"errors"
-	"fmt"
+	"log"
 	"net/http"
 	"os/exec"
 	"strings"
@@ -22,8 +22,23 @@ func verifyAuth(w http.ResponseWriter, givenAuthKey string) bool {
 	}
 }
 
+func StartADockerOrchestra(w http.ResponseWriter, r *http.Request) {
+	r.ParseMultipartForm(5 << 20)
+	if !verifyAuth(w, r.FormValue("auth_key")) {
+		return
+	}
+	response_util.SendOkResponse(w, "Is fine we can start the docker compose")
+}
+func StopADockerOrchestra(w http.ResponseWriter, r *http.Request) {
+	r.ParseMultipartForm(5 << 20)
+	if !verifyAuth(w, r.FormValue("auth_key")) {
+		return
+	}
+	response_util.SendOkResponse(w, "Is fine we can stop the  docker compose")
+}
+
 func StartADocker(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	r.ParseMultipartForm(5 << 20)
 	if !verifyAuth(w, r.FormValue("auth_key")) {
 		return
 	}
@@ -38,7 +53,7 @@ func StartADocker(w http.ResponseWriter, r *http.Request) {
 }
 
 func StopADocker(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	r.ParseMultipartForm(5 << 20)
 	if !verifyAuth(w, r.FormValue("auth_key")) {
 		return
 	}
@@ -53,7 +68,7 @@ func StopADocker(w http.ResponseWriter, r *http.Request) {
 }
 
 func RemoveADocker(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	r.ParseMultipartForm(5 << 20)
 	if !verifyAuth(w, r.FormValue("auth_key")) {
 		return
 	}
@@ -68,7 +83,7 @@ func RemoveADocker(w http.ResponseWriter, r *http.Request) {
 }
 
 func PauseADocker(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	r.ParseMultipartForm(5 << 20)
 	if !verifyAuth(w, r.FormValue("auth_key")) {
 		return
 	}
@@ -83,7 +98,7 @@ func PauseADocker(w http.ResponseWriter, r *http.Request) {
 }
 
 func UnPauseADocker(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	r.ParseMultipartForm(5 << 20)
 	if !verifyAuth(w, r.FormValue("auth_key")) {
 		return
 	}
@@ -98,7 +113,7 @@ func UnPauseADocker(w http.ResponseWriter, r *http.Request) {
 }
 
 func InspectADocker(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	r.ParseMultipartForm(5 << 20)
 	if !verifyAuth(w, r.FormValue("auth_key")) {
 		return
 	}
@@ -113,7 +128,7 @@ func InspectADocker(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetADockerLogs(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	r.ParseMultipartForm(5 << 20)
 	if !verifyAuth(w, r.FormValue("auth_key")) {
 		return
 	}
@@ -128,7 +143,7 @@ func GetADockerLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetDockerPS(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	r.ParseMultipartForm(5 << 20)
 	if !verifyAuth(w, r.FormValue("auth_key")) {
 		return
 	}
@@ -147,7 +162,7 @@ func GetDockerPS(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetDockerImages(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	r.ParseMultipartForm(5 << 20)
 	if !verifyAuth(w, r.FormValue("auth_key")) {
 		return
 	}
@@ -166,7 +181,7 @@ func GetDockerImages(w http.ResponseWriter, r *http.Request) {
 
 }
 func RemoveAnDockerImage(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	r.ParseMultipartForm(5 << 20)
 	if !verifyAuth(w, r.FormValue("auth_key")) {
 		return
 	}
@@ -181,7 +196,7 @@ func RemoveAnDockerImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func PullAnDockerImage(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	r.ParseMultipartForm(5 << 20)
 	if !verifyAuth(w, r.FormValue("auth_key")) {
 		return
 	}
@@ -196,7 +211,7 @@ func PullAnDockerImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func RunDockerContainer(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	r.ParseMultipartForm(5 << 20)
 	if !verifyAuth(w, r.FormValue("auth_key")) {
 		return
 	}
@@ -205,7 +220,7 @@ func RunDockerContainer(w http.ResponseWriter, r *http.Request) {
 	container_exists := checkDockerExistence(container_name)
 
 	if !container_exists {
-		fmt.Println("Container does not exist we have to create a new one")
+		log.Println("Container does not exist we have to create a new one")
 		res, err := createContainer(container_image, container_name, r.FormValue("network"),
 			r.FormValue("port_ex"), r.FormValue("port_in"), r.FormValue("volume_ex"), r.FormValue("volume_ex"), r.FormValue("v_map"))
 		if err != nil {
@@ -214,7 +229,7 @@ func RunDockerContainer(w http.ResponseWriter, r *http.Request) {
 			response_util.SendOkResponse(w, res)
 		}
 	} else {
-		fmt.Println("Container already exists\n We have to kill first and create a new one")
+		log.Println("Container already exists\n We have to kill first and create a new one")
 		final_res := ""
 		res1, err := DoDockerContainerAction(container_name, "stop")
 		if err != nil {

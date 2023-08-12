@@ -17,8 +17,10 @@ var host = "127.0.0.1:" + port
 func main() {
 	r := mux.NewRouter()
 	encr := r.PathPrefix("/api/v1/").Subrouter()
-	//encr.HandleFunc("/docker/compose/up", handler.StartAwakeDockers).Methods(http.MethodPost)
-	//encr.HandleFunc("/docker/compose/down", handler.StartADocker).Methods(http.MethodPost)
+
+	//encr.HandleFunc("/docker/compose/prepare", handler.StartAwakeDockers).Methods(http.MethodPost)
+	encr.HandleFunc("/docker/compose/up", handler.StartADockerOrchestra).Methods(http.MethodPost)
+	encr.HandleFunc("/docker/compose/down", handler.StopADockerOrchestra).Methods(http.MethodPost)
 
 	encr.HandleFunc("/docker/container/start", handler.StartADocker).Methods(http.MethodPost)
 	encr.HandleFunc("/docker/container/stop", handler.StopADocker).Methods(http.MethodPost)
