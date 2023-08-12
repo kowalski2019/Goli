@@ -1,4 +1,7 @@
 # Goli Action Helper
+
+![Goli](img/GOLI.jpg)
+
 ## Get started
 This program was implemented in order to have a kind of deployment adapted to people with a server that is not in an **Azure**, **AWS** etc. environment.
 
