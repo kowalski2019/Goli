@@ -1,4 +1,5 @@
 #!/bin/bash
+curr_dir=`pwd`
 
 function source_func() {
     source "/etc/profile"
@@ -60,18 +61,18 @@ function install() {
 
 
     ## Compile and Install go binary
-    cd ./goli && go get && go build -o "${goli_work_dir}/goli" main.go && cd ..
+    cd "${curr_dir}/goli" && go get && go build -o "${goli_work_dir}/goli" main.go && cd ..
 
     ## Create Goli Toml config file
     mkdir -p /goli/config
-    echo "s/dummy_key/${auth_key}/1" > "./utils/rule_1.sed"
-    sed -f "./utils/rule_1.sed" ./utils/config.toml > "/goli/config/config.toml"
+    echo "s/dummy_key/${auth_key}/1" > "${curr_dir}/utils/rule_1.sed"
+    sed -f "${curr_dir}/utils/rule_1.sed" "${curr_dir}/utils/config.toml" > "/goli/config/config.toml"
 
 
     ## Create Goli service file
     goli_work_dir_for_sed="\/usr\/local\/sbin\/goli"
-    echo "s/work_dir/${goli_work_dir_for_sed}/1;s/exec_start/${goli_work_dir_for_sed}\/goli/1" > "./utils/rule_2.sed"
-    sed -f "./utils/rule_2.sed" ./utils/goli.service > "/etc/systemd/system/goli.service"
+    echo "s/work_dir/${goli_work_dir_for_sed}/1;s/exec_start/${goli_work_dir_for_sed}\/goli/1" > "${curr_dir}/utils/rule_2.sed"
+    sed -f "${curr_dir}/utils/rule_2.sed" "${curr_dir}/utils/goli.service" > "/etc/systemd/system/goli.service"
 
     systemctl enable --now goli.service
 
