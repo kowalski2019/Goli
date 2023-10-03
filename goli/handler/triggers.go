@@ -222,7 +222,7 @@ func RunDockerContainer(w http.ResponseWriter, r *http.Request) {
 	if !container_exists {
 		log.Println("Container does not exist we have to create a new one")
 		res, err := createContainer(container_image, container_name, r.FormValue("network"),
-			r.FormValue("port_ex"), r.FormValue("port_in"), r.FormValue("volume_ex"), r.FormValue("volume_ex"), r.FormValue("v_map"))
+			r.FormValue("port_ex"), r.FormValue("port_in"), r.FormValue("volume_ex"), r.FormValue("volume_in"), r.FormValue("v_map"))
 		if err != nil {
 			response_util.SendInternalServerErrorResponse(w, err.Error())
 		} else {
@@ -261,7 +261,7 @@ func RunDockerContainer(w http.ResponseWriter, r *http.Request) {
 		}
 
 		res5, err := createContainer(container_image, container_name, r.FormValue("network"),
-			r.FormValue("port_ex"), r.FormValue("port_in"), r.FormValue("volume_ex"), r.FormValue("volume_ex"), r.FormValue("v_map"))
+			r.FormValue("port_ex"), r.FormValue("port_in"), r.FormValue("volume_ex"), r.FormValue("volume_in"), r.FormValue("v_map"))
 
 		if err != nil {
 			response_util.SendInternalServerErrorResponse(w, err.Error())
@@ -301,18 +301,25 @@ func DoDockerContainerAction(container string, action string) (string, error) {
 
 	switch action {
 	case "start":
+		log.Printf("docker start %s", container)
 		cmd = exec.Command("docker", "start", container)
 	case "stop":
+		log.Printf("docker stop %s", container)
 		cmd = exec.Command("docker", "stop", container)
 	case "rm":
+		log.Printf("docker rm -f %s", container)
 		cmd = exec.Command("docker", "rm", "-f", container)
 	case "pause":
+		log.Printf("docker pause %s", container)
 		cmd = exec.Command("docker", "pause", container)
 	case "unpause":
+		log.Printf("docker unpause %s", container)
 		cmd = exec.Command("docker", "unpause", container)
 	case "inspect":
+		log.Printf("docker inspect %s", container)
 		cmd = exec.Command("docker", "inspect", container)
 	case "logs":
+		log.Printf("docker logs %s", container)
 		cmd = exec.Command("docker", "logs", container)
 	default:
 		return "", errors.New("unknown action")
@@ -335,8 +342,10 @@ func DoDockerImageAction(image string, action string) (string, error) {
 
 	switch action {
 	case "rm":
+		log.Printf("docker rmi -f %s", image)
 		cmd = exec.Command("docker", "rmi", "-f", image)
 	case "pull":
+		log.Printf("docker pull %s", image)
 		cmd = exec.Command("docker", "pull", image)
 	default:
 		return "", errors.New("unknown action")
@@ -358,15 +367,19 @@ func createContainer(image string, name string, network string, port_ex string, 
 	var cmd *exec.Cmd
 	if network == "host" {
 		if v_map == "yes" {
+			log.Printf("docker run --network %s --name %s -v %s -d %s", network, name, volume_mapping, image)
 			cmd = exec.Command("docker", "run", "--network", network, "--name", name, "-v", volume_mapping, "-d", image)
 		} else {
+			log.Printf("docker run --network %s --name %s -d %s", network, name, image)
 			cmd = exec.Command("docker", "run", "--network", network, "--name", name, "-d", image)
 		}
 
 	} else {
 		if v_map == "yes" {
+			log.Printf("docker run -p %s --name %s -v %s -d %s", port_mapping, name, volume_mapping, image)
 			cmd = exec.Command("docker", "run", "-p", port_mapping, "--name", name, "-v", volume_mapping, "-d", image)
 		} else {
+			log.Printf("docker run -p %s --name %s -d %s", port_mapping, name, image)
 			cmd = exec.Command("docker", "run", "-p", port_mapping, "--name", name, "-d", image)
 		}
 

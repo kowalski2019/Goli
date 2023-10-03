@@ -75,7 +75,7 @@ function install() {
 
     systemctl enable --now goli.service
 
-    echo "Goli Action helper successfully installed."
+     [ $? -eq 0 ] && echo "Goli Action helper successfully installed." || echo "Goli Action helper installation went wrong."
 
     exit 0
 }
