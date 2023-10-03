@@ -61,7 +61,7 @@ function install() {
 
 
     ## Compile and Install go binary
-    cd "${curr_dir}/goli" && go get && go build -o "${goli_work_dir}/goli" main.go && cd ..
+    cd "${curr_dir}/goli" && /usr/local/go/bin/go get && /usr/local/go/bin/go build -o "${goli_work_dir}/goli" main.go && cd ..
 
     ## Create Goli Toml config file
     mkdir -p /goli/config
