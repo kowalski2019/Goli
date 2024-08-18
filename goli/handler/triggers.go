@@ -222,7 +222,7 @@ func RunDockerContainer(w http.ResponseWriter, r *http.Request) {
 	if !container_exists {
 		log.Println("Container does not exist we have to create a new one")
 		res, err := createContainer(container_image, container_name, r.FormValue("network"),
-			r.FormValue("port_ex"), r.FormValue("port_in"), r.FormValue("volume_ex"), r.FormValue("volume_in"), r.FormValue("v_map"))
+			r.FormValue("port_ex"), r.FormValue("port_in"), r.FormValue("volume_ex"), r.FormValue("volume_in"), r.FormValue("v_map"), r.FormValue("opts"))
 		if err != nil {
 			response_util.SendInternalServerErrorResponse(w, err.Error())
 		} else {
@@ -261,7 +261,7 @@ func RunDockerContainer(w http.ResponseWriter, r *http.Request) {
 		}
 
 		res5, err := createContainer(container_image, container_name, r.FormValue("network"),
-			r.FormValue("port_ex"), r.FormValue("port_in"), r.FormValue("volume_ex"), r.FormValue("volume_in"), r.FormValue("v_map"))
+			r.FormValue("port_ex"), r.FormValue("port_in"), r.FormValue("volume_ex"), r.FormValue("volume_in"), r.FormValue("v_map"), r.FormValue("opts"))
 
 		if err != nil {
 			response_util.SendInternalServerErrorResponse(w, err.Error())
@@ -360,7 +360,15 @@ func DoDockerImageAction(image string, action string) (string, error) {
 	}
 }
 
-func createContainer(image string, name string, network string, port_ex string, port_in string, volume_ex string, volume_in string, v_map string) (string, error) {
+func buildFinalArgs(opts []string, image string, args ...string) []string {
+	final_args := []string{}
+	final_args = append(final_args, args...)
+	final_args = append(final_args, opts...)
+	final_args = append(final_args, "-d", image)
+	return final_args
+}
+
+func createContainer(image string, name string, network string, port_ex string, port_in string, volume_ex string, volume_in string, v_map string, opts ...string) (string, error) {
 
 	volume_mapping := volume_ex + ":" + volume_in
 	port_mapping := port_ex + ":" + port_in
@@ -368,19 +376,27 @@ func createContainer(image string, name string, network string, port_ex string, 
 	if network == "host" {
 		if v_map == "yes" {
 			log.Printf("docker run --network %s --name %s -v %s -d %s", network, name, volume_mapping, image)
-			cmd = exec.Command("docker", "run", "--network", network, "--name", name, "-v", volume_mapping, "-d", image)
+			log.Println(opts)
+			cmd_args := buildFinalArgs(opts, image, "run", "--network", network, "--name", name, "-v", volume_mapping)
+			cmd = exec.Command("docker", cmd_args...)
 		} else {
 			log.Printf("docker run --network %s --name %s -d %s", network, name, image)
-			cmd = exec.Command("docker", "run", "--network", network, "--name", name, "-d", image)
+			log.Println(opts)
+			cmd_args := buildFinalArgs(opts, image, "run", "--network", network, "--name", name)
+			cmd = exec.Command("docker", cmd_args...)
 		}
 
 	} else {
 		if v_map == "yes" {
 			log.Printf("docker run -p %s --name %s -v %s -d %s", port_mapping, name, volume_mapping, image)
-			cmd = exec.Command("docker", "run", "-p", port_mapping, "--name", name, "-v", volume_mapping, "-d", image)
+			log.Println(opts)
+			cmd_args := buildFinalArgs(opts, image, "run", "-p", port_mapping, "--name", name, "-v", volume_mapping)
+			cmd = exec.Command("docker", cmd_args...)
 		} else {
 			log.Printf("docker run -p %s --name %s -d %s", port_mapping, name, image)
-			cmd = exec.Command("docker", "run", "-p", port_mapping, "--name", name, "-d", image)
+			log.Println(opts)
+			cmd_args := buildFinalArgs(opts, image, "run", "-p", port_mapping, "--name", name)
+			cmd = exec.Command("docker", cmd_args...)
 		}
 
 	}
