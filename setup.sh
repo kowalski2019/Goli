@@ -25,7 +25,7 @@ function install() {
     go_download_link="https://go.dev/dl/go1.20.3.linux-amd64.tar.gz"
     go_installer="go1.20.3.linux-amd64.tar.gz"
 
-    /usr/local/go/bin/go version 2>/dev/null
+    which go
     if [ $? -ne 0 ]; then 
         echo "Go does not exists!"
         echo "Downloading go ..."
@@ -37,8 +37,8 @@ function install() {
         
         echo "Installing go ..."
         export PATH=$PATH:/usr/local/go/bin
-        [ $? -eq 0 ] && grep "from-go" "/etc/profile" 
-        [ $? -ne 0 ] echo 'export PATH=$PATH:/usr/local/go/bin # from-goli' >> "/etc/profile"
+        [ $? -eq 0 ] && grep "from-goli" "/etc/profile" 
+        [ $? -ne 0 ] echo 'export PATH=$PATH:/usr/local/go/bin # from-goli' >> "/etc/profile"; echo 'export PATH=$PATH:/usr/local/go/bin # from-goli' >> "$HOME/.profile"
         #[ $? -eq 0 ] && source_func && echo "null" >/dev/null
 
         /usr/local/go/bin/go version 2>/dev/null
@@ -76,7 +76,14 @@ function install() {
 
     systemctl enable --now goli.service
 
-     [ $? -eq 0 ] && echo "Goli Action helper successfully installed." || echo "Goli Action helper installation went wrong."
+    if [ $? -eq 0 ]; then
+        echo "Goli Action helper successfully installed."
+        echo "Your auth_key is : $default_authkey"
+        echo "You can also find it in '/goli/config/config.toml'"
+    else
+        echo "Goli Action helper installation went wrong."
+        remove
+    fi
 
     exit 0
 }
@@ -91,7 +98,7 @@ function remove() {
     systemctl disable goli.service
 
     rm "/etc/systemd/system/goli.service" && rm -rf "/goli/" && rm -rf /usr/local/sbin/goli
-
+    
     echo "Goli Action helper successfully removed."
 
     exit 0
@@ -119,5 +126,4 @@ else
     echo "Unknown option"
     exit_func
 fi
-
 
