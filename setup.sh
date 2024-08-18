@@ -38,7 +38,10 @@ function install() {
         echo "Installing go ..."
         export PATH=$PATH:/usr/local/go/bin
         [ $? -eq 0 ] && grep "from-goli" "/etc/profile" 
-        [ $? -ne 0 ] echo 'export PATH=$PATH:/usr/local/go/bin # from-goli' >> "/etc/profile"; echo 'export PATH=$PATH:/usr/local/go/bin # from-goli' >> "$HOME/.profile"
+        if [ $? -ne 0 ]; then
+            echo 'export PATH=$PATH:/usr/local/go/bin # from-goli' >> "/etc/profile"
+            echo 'export PATH=$PATH:/usr/local/go/bin # from-goli' >> "$HOME/.profile"
+        fi
         #[ $? -eq 0 ] && source_func && echo "null" >/dev/null
 
         /usr/local/go/bin/go version 2>/dev/null
