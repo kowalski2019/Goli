@@ -2,8 +2,10 @@ package handler
 
 import (
 	"bytes"
-	aux "deployer/auxiliary"
+	"deployer/middlewares"
+	"deployer/types"
 	response_util "deployer/utils"
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -11,40 +13,31 @@ import (
 	"strings"
 )
 
-var auth_key = aux.GetFromConfig("constants.auth_key")
-
-func verifyAuth(w http.ResponseWriter, givenAuthKey string) bool {
-	if givenAuthKey == auth_key {
-		return true
-	} else {
-		response_util.SendUnauthorizedResponse(w, "Wrong auth key provided")
-		return false
-	}
-}
-
 func StartADockerOrchestra(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(5 << 20)
-	if !verifyAuth(w, r.FormValue("auth_key")) {
+	if !middlewares.VerifyAuth(w, r) {
 		return
 	}
 	response_util.SendOkResponse(w, "Is fine we can start the docker compose")
 }
 func StopADockerOrchestra(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(5 << 20)
-	if !verifyAuth(w, r.FormValue("auth_key")) {
+	if !middlewares.VerifyAuth(w, r) {
 		return
 	}
 	response_util.SendOkResponse(w, "Is fine we can stop the  docker compose")
 }
 
 func StartADocker(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(5 << 20)
-	if !verifyAuth(w, r.FormValue("auth_key")) {
+	if !middlewares.VerifyAuth(w, r) {
 		return
 	}
-	//params := mux.Vars(r)
-	containerName := r.FormValue("name")
-	res, err := DoDockerContainerAction(containerName, "start")
+
+	var body types.GoliRequestBody
+	err1 := json.NewDecoder(r.Body).Decode(&body)
+	if err1 != nil {
+		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
+		return
+	}
+	res, err := DoDockerContainerAction(body.Name, "start")
 	if err != nil {
 		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
@@ -53,13 +46,17 @@ func StartADocker(w http.ResponseWriter, r *http.Request) {
 }
 
 func StopADocker(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(5 << 20)
-	if !verifyAuth(w, r.FormValue("auth_key")) {
+	if !middlewares.VerifyAuth(w, r) {
 		return
 	}
-	//params := mux.Vars(r)
-	containerName := r.FormValue("name")
-	res, err := DoDockerContainerAction(containerName, "stop")
+
+	var body types.GoliRequestBody
+	err1 := json.NewDecoder(r.Body).Decode(&body)
+	if err1 != nil {
+		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
+		return
+	}
+	res, err := DoDockerContainerAction(body.Name, "stop")
 	if err != nil {
 		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
@@ -68,13 +65,17 @@ func StopADocker(w http.ResponseWriter, r *http.Request) {
 }
 
 func RemoveADocker(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(5 << 20)
-	if !verifyAuth(w, r.FormValue("auth_key")) {
+	if !middlewares.VerifyAuth(w, r) {
 		return
 	}
-	//params := mux.Vars(r)
-	containerName := r.FormValue("name")
-	res, err := DoDockerContainerAction(containerName, "rm")
+
+	var body types.GoliRequestBody
+	err1 := json.NewDecoder(r.Body).Decode(&body)
+	if err1 != nil {
+		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
+		return
+	}
+	res, err := DoDockerContainerAction(body.Name, "rm")
 	if err != nil {
 		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
@@ -83,13 +84,17 @@ func RemoveADocker(w http.ResponseWriter, r *http.Request) {
 }
 
 func PauseADocker(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(5 << 20)
-	if !verifyAuth(w, r.FormValue("auth_key")) {
+	if !middlewares.VerifyAuth(w, r) {
 		return
 	}
-	//params := mux.Vars(r)
-	containerName := r.FormValue("name")
-	res, err := DoDockerContainerAction(containerName, "pause")
+
+	var body types.GoliRequestBody
+	err1 := json.NewDecoder(r.Body).Decode(&body)
+	if err1 != nil {
+		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
+		return
+	}
+	res, err := DoDockerContainerAction(body.Name, "pause")
 	if err != nil {
 		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
@@ -98,13 +103,17 @@ func PauseADocker(w http.ResponseWriter, r *http.Request) {
 }
 
 func UnPauseADocker(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(5 << 20)
-	if !verifyAuth(w, r.FormValue("auth_key")) {
+	if !middlewares.VerifyAuth(w, r) {
 		return
 	}
-	//params := mux.Vars(r)
-	containerName := r.FormValue("name")
-	res, err := DoDockerContainerAction(containerName, "unpause")
+
+	var body types.GoliRequestBody
+	err1 := json.NewDecoder(r.Body).Decode(&body)
+	if err1 != nil {
+		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
+		return
+	}
+	res, err := DoDockerContainerAction(body.Name, "unpause")
 	if err != nil {
 		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
@@ -113,13 +122,17 @@ func UnPauseADocker(w http.ResponseWriter, r *http.Request) {
 }
 
 func InspectADocker(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(5 << 20)
-	if !verifyAuth(w, r.FormValue("auth_key")) {
+	if !middlewares.VerifyAuth(w, r) {
 		return
 	}
-	//params := mux.Vars(r)
-	containerName := r.FormValue("name")
-	res, err := DoDockerContainerAction(containerName, "inspect")
+
+	var body types.GoliRequestBody
+	err1 := json.NewDecoder(r.Body).Decode(&body)
+	if err1 != nil {
+		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
+		return
+	}
+	res, err := DoDockerContainerAction(body.Name, "inspect")
 	if err != nil {
 		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
@@ -128,13 +141,17 @@ func InspectADocker(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetADockerLogs(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(5 << 20)
-	if !verifyAuth(w, r.FormValue("auth_key")) {
+	if !middlewares.VerifyAuth(w, r) {
 		return
 	}
-	//params := mux.Vars(r)
-	containerName := r.FormValue("name")
-	res, err := DoDockerContainerAction(containerName, "logs")
+
+	var body types.GoliRequestBody
+	err1 := json.NewDecoder(r.Body).Decode(&body)
+	if err1 != nil {
+		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
+		return
+	}
+	res, err := DoDockerContainerAction(body.Name, "logs")
 	if err != nil {
 		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
@@ -143,8 +160,7 @@ func GetADockerLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetDockerPS(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(5 << 20)
-	if !verifyAuth(w, r.FormValue("auth_key")) {
+	if !middlewares.VerifyAuth(w, r) {
 		return
 	}
 	cmd := exec.Command("docker", "ps", "-a")
@@ -162,8 +178,7 @@ func GetDockerPS(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetDockerImages(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(5 << 20)
-	if !verifyAuth(w, r.FormValue("auth_key")) {
+	if !middlewares.VerifyAuth(w, r) {
 		return
 	}
 	cmd := exec.Command("docker", "images")
@@ -181,13 +196,18 @@ func GetDockerImages(w http.ResponseWriter, r *http.Request) {
 
 }
 func RemoveAnDockerImage(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(5 << 20)
-	if !verifyAuth(w, r.FormValue("auth_key")) {
+	if !middlewares.VerifyAuth(w, r) {
 		return
 	}
-	//params := mux.Vars(r)
-	imageName := r.FormValue("image")
-	res, err := DoDockerImageAction(imageName, "rm")
+
+	var body types.GoliRequestBody
+	err1 := json.NewDecoder(r.Body).Decode(&body)
+	if err1 != nil {
+		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
+		return
+	}
+
+	res, err := DoDockerImageAction(body.Image, "rm")
 	if err != nil {
 		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
@@ -196,13 +216,17 @@ func RemoveAnDockerImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func PullAnDockerImage(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(5 << 20)
-	if !verifyAuth(w, r.FormValue("auth_key")) {
+	if !middlewares.VerifyAuth(w, r) {
 		return
 	}
-	//params := mux.Vars(r)
-	imageName := r.FormValue("image")
-	res, err := DoDockerImageAction(imageName, "pull")
+
+	var body types.GoliRequestBody
+	err1 := json.NewDecoder(r.Body).Decode(&body)
+	if err1 != nil {
+		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
+		return
+	}
+	res, err := DoDockerImageAction(body.Image, "pull")
 	if err != nil {
 		response_util.SendInternalServerErrorResponse(w, err.Error())
 		return
@@ -211,18 +235,25 @@ func PullAnDockerImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func RunDockerContainer(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(5 << 20)
-	if !verifyAuth(w, r.FormValue("auth_key")) {
+	if !middlewares.VerifyAuth(w, r) {
 		return
 	}
-	container_name := r.FormValue("name")
-	container_image := r.FormValue("image")
+
+	var body types.GoliRequestBody
+	err1 := json.NewDecoder(r.Body).Decode(&body)
+	if err1 != nil {
+		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
+		return
+	}
+
+	container_name := body.Name
+	container_image := body.Image
 	container_exists := checkDockerExistence(container_name)
 
 	if !container_exists {
 		log.Println("Container does not exist we have to create a new one")
-		res, err := createContainer(container_image, container_name, r.FormValue("network"),
-			r.FormValue("port_ex"), r.FormValue("port_in"), r.FormValue("volume_ex"), r.FormValue("volume_in"), r.FormValue("v_map"), r.FormValue("opts"))
+		res, err := createContainer(container_image, container_name, body.Network,
+			body.Port_Ex, body.Port_In, body.Volume_Ex, body.Volume_In, body.V_Map, body.Opts)
 		if err != nil {
 			response_util.SendInternalServerErrorResponse(w, err.Error())
 		} else {
@@ -260,8 +291,8 @@ func RunDockerContainer(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		res5, err := createContainer(container_image, container_name, r.FormValue("network"),
-			r.FormValue("port_ex"), r.FormValue("port_in"), r.FormValue("volume_ex"), r.FormValue("volume_in"), r.FormValue("v_map"), r.FormValue("opts"))
+		res5, err := createContainer(container_image, container_name, body.Network,
+			body.Port_Ex, body.Port_In, body.Volume_Ex, body.Volume_In, body.V_Map, body.Opts)
 
 		if err != nil {
 			response_util.SendInternalServerErrorResponse(w, err.Error())
@@ -368,34 +399,34 @@ func buildFinalArgs(opts []string, image string, args ...string) []string {
 	return final_args
 }
 
-func createContainer(image string, name string, network string, port_ex string, port_in string, volume_ex string, volume_in string, v_map string, opts ...string) (string, error) {
+func createContainer(image string, name string, network string, port_ex string, port_in string, volume_ex string, volume_in string, v_map bool, opts ...string) (string, error) {
 
 	volume_mapping := volume_ex + ":" + volume_in
 	port_mapping := port_ex + ":" + port_in
 	var cmd *exec.Cmd
 	if network == "host" {
-		if v_map == "yes" {
+		if v_map {
 			log.Printf("docker run --network %s --name %s -v %s -d %s", network, name, volume_mapping, image)
-			log.Println(opts)
 			cmd_args := buildFinalArgs(opts, image, "run", "--network", network, "--name", name, "-v", volume_mapping)
+			log.Println("Final Command: ", "docker ", cmd_args)
 			cmd = exec.Command("docker", cmd_args...)
 		} else {
 			log.Printf("docker run --network %s --name %s -d %s", network, name, image)
-			log.Println(opts)
 			cmd_args := buildFinalArgs(opts, image, "run", "--network", network, "--name", name)
+			log.Println("Final Command: ", "docker ", cmd_args)
 			cmd = exec.Command("docker", cmd_args...)
 		}
 
 	} else {
-		if v_map == "yes" {
+		if v_map {
 			log.Printf("docker run -p %s --name %s -v %s -d %s", port_mapping, name, volume_mapping, image)
-			log.Println(opts)
 			cmd_args := buildFinalArgs(opts, image, "run", "-p", port_mapping, "--name", name, "-v", volume_mapping)
+			log.Println("Final Command: ", "docker ", cmd_args)
 			cmd = exec.Command("docker", cmd_args...)
 		} else {
 			log.Printf("docker run -p %s --name %s -d %s", port_mapping, name, image)
-			log.Println(opts)
 			cmd_args := buildFinalArgs(opts, image, "run", "-p", port_mapping, "--name", name)
+			log.Println("Final Command: ", "docker ", cmd_args)
 			cmd = exec.Command("docker", cmd_args...)
 		}
 
