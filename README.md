@@ -11,10 +11,19 @@ It is a very simple REST-API implemented in the **Go** language, which allows to
 You need to have a server and have ubuntu running on it.
 
 ## Configure your server to use Goli
-You have juste to run the script **setup.sh**
 
+### Create Domain for Goli
+
+
+### Create a GitHub personal access token
+![Follow this link](https://github.com/settings/tokens/new)
+
+- Select the __read:packages__ scope to download container images and read their metadata.
+- Select the __write:packages__ scope to download and upload container images and read and write their metadata.
+
+### Run the setup script
 ```
-./setup.sh
+chmod +x ./setup.sh && ./setup.sh
 ```
 
 After this your "Goli Action Helper" is ready for use. Enjoy ;-)
@@ -23,18 +32,15 @@ After this your "Goli Action Helper" is ready for use. Enjoy ;-)
 ## Make a Test
 
 ```
-curl -d 'auth_key=dummy_key' \
-        -d 'name=hello_container' \
-        -d 'image=dommy_image:latest' \
-        -d 'network=host' \
-        -d 'port_ex=9000' \
-        -d 'port_in=80' \
-        -d 'volume_ex=/var/log' \
-        -d 'volume_in=/var/log' \
-        -d 'v_map=yes' \
-
-        -X POST \
-        -H 'Content-Type: application/xwww-form-urlencoded' http://127.0.0.1:<host_port>/api/v1/docker/ps
+curl -X POST  \
+       --header "Authorization: DeepL-Auth-Key dummy_key" \
+       --header "Content-Type: application/json" \
+       --data '{ "name": "hello_container", "image": "dummy_image:latest", 
+                "network": "host", 
+                "port_ex": "9000", "port_in": "80",
+                "v_map": false,
+                "volume_ex": "/var/log", "volume_in": "/var/log" }' \
+        http://127.0.0.1:<host_port>/api/v1/docker/ps
 
 ```
 
@@ -56,4 +62,8 @@ curl -d 'auth_key=dummy_key' \
 	POST: /api/v1/docker/ps
 	POST: /api/v1/docker/images
 ```
+
+## Tipps for your Pipeline
+
+
 
