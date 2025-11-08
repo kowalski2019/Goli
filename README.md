@@ -35,11 +35,16 @@ After this your "Goli Action Helper" is ready for use. Enjoy ;-)
 curl -X POST  \
        --header "Authorization: DeepL-Auth-Key dummy_key" \
        --header "Content-Type: application/json" \
-       --data '{ "name": "hello_container", "image": "dummy_image:latest", 
+       --data '{ 
+                "name": "hello_container", 
+                "image": "dummy_image:latest", 
                 "network": "host", 
-                "port_ex": "9000", "port_in": "80",
+                "port_ex": "9000", 
+                "port_in": "80",
                 "v_map": false,
-                "volume_ex": "/var/log", "volume_in": "/var/log" }' \
+                "volume_ex": "/var/log", 
+                "volume_in": "/var/log",
+                "opts": "" }' \
         http://127.0.0.1:<host_port>/api/v1/docker/ps
 
 ```
