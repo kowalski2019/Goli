@@ -1,0 +1,38 @@
+name: "Example Deployment Pipeline"
+description: "A simple example pipeline that demonstrates Goli's capabilities"
+steps:
+  - name: "Pull Docker Image"
+    type: "docker"
+    action: "pull"
+    config:
+      image: "nginx:latest"
+    retry: 2
+    on_failure: "stop"
+
+  - name: "Run Container"
+    type: "docker"
+    action: "run"
+    config:
+      container: "my-nginx"
+      image: "nginx:latest"
+      ports: ["8082:80"]
+      cmd: ["nginx", "-t",]
+    retry: 1
+    on_failure: "continue"
+
+  - name: "Verify Container"
+    type: "shell"
+    action: "check"
+    config:
+      command: "docker"
+      args: ["ps", "-a", "--filter", "name=my-nginx"]
+    on_failure: "stop"
+
+  - name: "Test Shell Step"
+    type: "shell"
+    action: "run"
+    config:
+      command: "ls"
+      args: ["-la"]
+    on_failure: "stop"
+

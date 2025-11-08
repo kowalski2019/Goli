@@ -1,0 +1,4 @@
+# This directory will contain the built files from ViteJS + Vue + Tailwind
+# For now, it contains the simple HTML UI
+# After building with ViteJS, the dist/ folder contents should be copied here
+
