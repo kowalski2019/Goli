@@ -2,11 +2,11 @@ package handler
 
 import (
 	"bytes"
-	"deployer/middlewares"
-	"deployer/types"
-	response_util "deployer/utils"
 	"encoding/json"
 	"errors"
+	"goli/middlewares"
+	"goli/types"
+	response_util "goli/utils"
 	"log"
 	"net/http"
 	"os/exec"

@@ -1,8 +1,8 @@
 package middlewares
 
 import (
-	aux "deployer/auxiliary"
-	response_util "deployer/utils"
+	aux "goli/auxiliary"
+	response_util "goli/utils"
 	"net/http"
 
 	"strings"
