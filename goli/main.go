@@ -37,6 +37,9 @@ func main() {
 	encr.HandleFunc("/docker/ps", handler.GetDockerPS).Methods(http.MethodPost)
 	encr.HandleFunc("/docker/images", handler.GetDockerImages).Methods(http.MethodPost)
 
+	// Serve static files (UI)
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./web/")))
+
 	log.Println("Action Helper Backend is running on " + host)
 	log.Fatal(http.ListenAndServe(host, handlers.CORS(
 		handlers.AllowedHeaders(
