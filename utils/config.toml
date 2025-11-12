@@ -1,3 +1,18 @@
 [constants]
 auth_key = "dummy_key"
 port = "8125"
+setup_complete = false
+
+gh_username = "dummy_gh_user"
+gh_access_token = "ghp_xxxxxxxxxxxxxxxxxxxxxxx"
+
+smtp_host = "__smtp_host__"
+smtp_port = "__smtp_port__"
+smtp_user = "__smtp_user__"
+smtp_pass = "__smtp_pass__"
+smtp_from = "__smtp_from__"
+
+
+twilio_sid = "__twilio_sid__"
+twilio_token = "__twilio_token__"
+twilio_from = "__twilio_from__"

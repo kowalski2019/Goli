@@ -4,6 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
+User=goli
+Group=goli
 WorkingDirectory=work_dir
 ExecStart=exec_start
 Restart=always
