@@ -1,0 +1,30 @@
+name: "Example Deployment Pipeline for Shell Step and Script Step"
+description: "A simple example pipeline that demonstrates Goli's capabilities for shell step and script step"
+steps:
+
+  - name: "Test Shell Step 1"
+    type: "shell"
+    action: "run"
+    config:
+      command: "ls"
+      args: ["-la"]
+    on_failure: "stop"
+
+  - name: "Test Shell Step 2"
+    type: "shell"
+    action: "run"
+    config:
+      command: "ls"
+      args: ["-laR", "/"]
+    on_failure: "continue"
+
+  - name: "Test Shell Step 3"
+    type: "script"
+    action: "run"
+    config:
+      script: |
+        echo "Test Shell Step 3"
+        pushd /tmp
+        echo "Test Shell Step 3"
+        popd
+    on_failure: "stop"

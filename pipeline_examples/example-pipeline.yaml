@@ -35,4 +35,3 @@ steps:
       command: "ls"
       args: ["-la"]
     on_failure: "stop"
-
