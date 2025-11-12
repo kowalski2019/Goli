@@ -11,7 +11,7 @@ smtp_port = "__smtp_port__"
 smtp_user = "__smtp_user__"
 smtp_pass = "__smtp_pass__"
 smtp_from = "__smtp_from__"
-
+smtp_from_name = "_smtp_from_name__"
 
 twilio_sid = "__twilio_sid__"
 twilio_token = "__twilio_token__"

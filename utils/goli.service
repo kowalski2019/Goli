@@ -1,5 +1,5 @@
 [Unit]
-Description=Goli Github action-runner Helper for Deployment
+Description=Goli Goli CI/CD
 After=network.target
 
 [Service]
