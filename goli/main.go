@@ -109,10 +109,17 @@ func main() {
 		api.PUT("/users/:id", handler.UpdateUserHandler)
 		api.DELETE("/users/:id", handler.DeleteUserHandler)
 
-		// Docker endpoints (keeping existing handlers - they need to be converted separately)
-		// api.POST("/docker/compose/up", handler.StartADockerOrchestra)
-		// api.POST("/docker/compose/down", handler.StopADockerOrchestra)
-		// ... (other docker endpoints)
+		// Docker endpoints
+		api.POST("/docker/container/start", handler.StartADocker)
+		api.POST("/docker/container/stop", handler.StopADocker)
+		api.POST("/docker/container/rm", handler.RemoveADocker)
+		api.POST("/docker/container/run", handler.RunDockerContainer)
+		api.POST("/docker/image/pull", handler.PullAnDockerImage)
+		api.POST("/docker/image/rm", handler.RemoveAnDockerImage)
+		api.POST("/docker/ps", handler.GetDockerPS)
+		api.POST("/docker/images", handler.GetDockerImages)
+		api.POST("/docker/compose/up", handler.StartADockerOrchestra)
+		api.POST("/docker/compose/down", handler.StopADockerOrchestra)
 	}
 
 	// WebSocket endpoint (no auth middleware, but can check auth in handler if needed)

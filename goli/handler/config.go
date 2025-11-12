@@ -20,6 +20,12 @@ func GetConfigHandler(c *gin.Context) {
 		"setup_complete":  setupComplete,
 		"gh_username":     config["gh_username"],
 		"gh_access_token": config["gh_access_token"],
+		"smtp_host":       config["smtp_host"],
+		"smtp_port":       config["smtp_port"],
+		"smtp_user":       config["smtp_user"],
+		"smtp_pass":       config["smtp_pass"],
+		"smtp_from":       config["smtp_from"],
+		"smtp_from_name":  config["smtp_from_name"],
 	})
 }
 
@@ -31,6 +37,12 @@ func UpdateConfigHandler(c *gin.Context) {
 		SetupComplete *bool  `json:"setup_complete,omitempty"`
 		GHUsername    string `json:"gh_username,omitempty"`
 		GHAccessToken string `json:"gh_access_token,omitempty"`
+		SMTPHost      string `json:"smtp_host,omitempty"`
+		SMTPPort      string `json:"smtp_port,omitempty"`
+		SMTPUser      string `json:"smtp_user,omitempty"`
+		SMTPPass      string `json:"smtp_pass,omitempty"`
+		SMTPFrom      string `json:"smtp_from,omitempty"`
+		SMTPFromName  string `json:"smtp_from_name,omitempty"`
 	}
 
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -66,6 +78,30 @@ func UpdateConfigHandler(c *gin.Context) {
 		updates["gh_access_token"] = body.GHAccessToken
 	}
 
+	if body.SMTPHost != "" {
+		updates["smtp_host"] = body.SMTPHost
+	}
+
+	if body.SMTPPort != "" {
+		updates["smtp_port"] = body.SMTPPort
+	}
+
+	if body.SMTPUser != "" {
+		updates["smtp_user"] = body.SMTPUser
+	}
+
+	if body.SMTPPass != "" {
+		updates["smtp_pass"] = body.SMTPPass
+	}
+
+	if body.SMTPFrom != "" {
+		updates["smtp_from"] = body.SMTPFrom
+	}
+
+	if body.SMTPFromName != "" {
+		updates["smtp_from_name"] = body.SMTPFromName
+	}
+
 	if len(updates) == 0 {
 		response_util.SendBadRequestResponseGin(c, "No fields to update")
 		return
@@ -86,6 +122,11 @@ func UpdateConfigHandler(c *gin.Context) {
 		"setup_complete":  setupComplete,
 		"gh_username":     config["gh_username"],
 		"gh_access_token": config["gh_access_token"],
+		"smtp_host":       config["smtp_host"],
+		"smtp_port":       config["smtp_port"],
+		"smtp_user":       config["smtp_user"],
+		"smtp_pass":       config["smtp_pass"],
+		"smtp_from":       config["smtp_from"],
+		"smtp_from_name":  config["smtp_from_name"],
 	})
 }
-
