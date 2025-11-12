@@ -1,32 +1,25 @@
 package handler
 
 import (
-	"encoding/json"
 	"goli/database"
-	"goli/middlewares"
 	"goli/models"
 	"goli/queue"
 	response_util "goli/utils"
-	"net/http"
 	"strconv"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 )
 
 // CreateJobHandler creates a new job
-func CreateJobHandler(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
-
+func CreateJobHandler(c *gin.Context) {
 	var body struct {
 		Name        string `json:"name"`
 		PipelineID  *int64 `json:"pipeline_id,omitempty"`
 		TriggeredBy string `json:"triggered_by,omitempty"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		response_util.SendBadRequestResponse(w, "Invalid request body: "+err.Error())
+	if err := c.ShouldBindJSON(&body); err != nil {
+		response_util.SendBadRequestResponseGin(c, "Invalid request body: "+err.Error())
 		return
 	}
 
@@ -42,66 +35,71 @@ func CreateJobHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := queue.GetQueue().Enqueue(job); err != nil {
-		response_util.SendInternalServerErrorResponse(w, "Failed to enqueue job: "+err.Error())
+		response_util.SendInternalServerErrorResponseGin(c, "Failed to enqueue job: "+err.Error())
 		return
 	}
 
-	response_util.SendOkResponse(w, "Job created and enqueued")
+	response_util.SendOkResponseGin(c, "Job created and enqueued")
 }
 
 // GetJobHandler retrieves a job by ID
-func GetJobHandler(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
-
-	vars := mux.Vars(r)
-	id, err := strconv.ParseInt(vars["id"], 10, 64)
+func GetJobHandler(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response_util.SendBadRequestResponse(w, "Invalid job ID")
+		response_util.SendBadRequestResponseGin(c, "Invalid job ID")
 		return
 	}
 
 	job, err := database.GetJob(id)
 	if err != nil {
-		response_util.SendNotFoundResponse(w, "Job not found")
+		response_util.SendNotFoundResponseGin(c, "Job not found")
 		return
 	}
 
-	jsonData, _ := json.Marshal(job)
-	response_util.SendJsonResponse(w, http.StatusOK, jsonData)
+	response_util.SendJsonResponseGin(c, 200, job)
 }
 
 // ListJobsHandler lists all jobs
-func ListJobsHandler(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
-
+func ListJobsHandler(c *gin.Context) {
 	limit := 50
 	offset := 0
 	statusFilter := ""
 
-	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+	if limitStr := c.Query("limit"); limitStr != "" {
 		if l, err := strconv.Atoi(limitStr); err == nil {
 			limit = l
 		}
 	}
-	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
+	if offsetStr := c.Query("offset"); offsetStr != "" {
 		if o, err := strconv.Atoi(offsetStr); err == nil {
 			offset = o
 		}
 	}
-	if status := r.URL.Query().Get("status"); status != "" {
+	if status := c.Query("status"); status != "" {
 		statusFilter = status
 	}
 
-	jobs, err := database.ListJobs(limit, offset, statusFilter)
+	jobs, err := database.GetJobs(limit, offset, statusFilter)
 	if err != nil {
-		response_util.SendInternalServerErrorResponse(w, "Failed to list jobs: "+err.Error())
+		response_util.SendInternalServerErrorResponseGin(c, "Failed to list jobs: "+err.Error())
 		return
 	}
 
-	jsonData, _ := json.Marshal(jobs)
-	response_util.SendJsonResponse(w, http.StatusOK, jsonData)
+	response_util.SendJsonResponseGin(c, 200, jobs)
+}
+
+// CancelJobHandler cancels a running or pending job
+func CancelJobHandler(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response_util.SendBadRequestResponseGin(c, "Invalid job ID")
+		return
+	}
+
+	if err := queue.GetQueue().CancelJob(id); err != nil {
+		response_util.SendBadRequestResponseGin(c, "Failed to cancel job: "+err.Error())
+		return
+	}
+
+	response_util.SendOkResponseGin(c, "Job cancelled successfully")
 }

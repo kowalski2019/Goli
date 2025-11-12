@@ -106,6 +106,30 @@ func (h *Hub) BroadcastStatsUpdate(stats map[string]interface{}) {
 	}
 }
 
+// BroadcastLogUpdate broadcasts log updates for a job to all connected clients
+// This is used for progressive log streaming for long-running jobs
+func (h *Hub) BroadcastLogUpdate(jobID int64, logs string, stepID *int64, stepLogs string) {
+	message := map[string]interface{}{
+		"type": "log_update",
+		"data": map[string]interface{}{
+			"job_id":    jobID,
+			"logs":      logs,
+			"step_id":   stepID,
+			"step_logs": stepLogs,
+		},
+	}
+	data, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("Error marshaling log update: %v", err)
+		return
+	}
+	select {
+	case h.broadcast <- data:
+	default:
+		log.Println("Broadcast channel full, dropping log update message")
+	}
+}
+
 // Client is a middleman between the websocket connection and the hub
 type Client struct {
 	Hub *Hub

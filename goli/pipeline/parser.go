@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"goli/models"
+	"strconv"
 
 	"gopkg.in/yaml.v3"
 )
@@ -29,7 +30,7 @@ func ValidatePipelineDefinition(def *models.PipelineDefinition) error {
 
 	for i, step := range def.Steps {
 		if step.Name == "" {
-			return &PipelineError{Message: "Step name is required for step " + string(rune(i+1))}
+			return &PipelineError{Message: "Step name is required for step " + strconv.Itoa(i+1)}
 		}
 		if step.Type == "" {
 			return &PipelineError{Message: "Step type is required for step " + step.Name}

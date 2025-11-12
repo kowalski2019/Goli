@@ -2,35 +2,30 @@ package handler
 
 import (
 	"bytes"
-	"encoding/json"
 	"goli/database"
-	"goli/middlewares"
 	"goli/models"
 	"goli/pipeline"
 	"goli/queue"
 	response_util "goli/utils"
 	"io"
-	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 // UploadPipelineHandler handles YAML file uploads and creates a pipeline
-func UploadPipelineHandler(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
-
+func UploadPipelineHandler(c *gin.Context) {
 	// Parse multipart form (max 10MB)
-	err := r.ParseMultipartForm(10 << 20)
+	err := c.Request.ParseMultipartForm(10 << 20)
 	if err != nil {
-		response_util.SendBadRequestResponse(w, "Error parsing form: "+err.Error())
+		response_util.SendBadRequestResponseGin(c, "Error parsing form: "+err.Error())
 		return
 	}
 
 	// Get the file
-	file, header, err := r.FormFile("yaml_file")
+	file, header, err := c.Request.FormFile("yaml_file")
 	if err != nil {
-		response_util.SendBadRequestResponse(w, "Error retrieving file: "+err.Error())
+		response_util.SendBadRequestResponseGin(c, "Error retrieving file: "+err.Error())
 		return
 	}
 	defer file.Close()
@@ -38,7 +33,7 @@ func UploadPipelineHandler(w http.ResponseWriter, r *http.Request) {
 	// Check file extension
 	if !strings.HasSuffix(strings.ToLower(header.Filename), ".yaml") &&
 		!strings.HasSuffix(strings.ToLower(header.Filename), ".yml") {
-		response_util.SendBadRequestResponse(w, "File must be a YAML file (.yaml or .yml)")
+		response_util.SendBadRequestResponseGin(c, "File must be a YAML file (.yaml or .yml)")
 		return
 	}
 
@@ -46,7 +41,7 @@ func UploadPipelineHandler(w http.ResponseWriter, r *http.Request) {
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, file)
 	if err != nil {
-		response_util.SendInternalServerErrorResponse(w, "Error reading file: "+err.Error())
+		response_util.SendInternalServerErrorResponseGin(c, "Error reading file: "+err.Error())
 		return
 	}
 
@@ -55,17 +50,17 @@ func UploadPipelineHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse and validate pipeline definition
 	pipelineDef, err := pipeline.ParsePipelineDefinition(yamlContent)
 	if err != nil {
-		response_util.SendBadRequestResponse(w, "Invalid pipeline definition: "+err.Error())
+		response_util.SendBadRequestResponseGin(c, "Invalid pipeline definition: "+err.Error())
 		return
 	}
 
 	if err := pipeline.ValidatePipelineDefinition(pipelineDef); err != nil {
-		response_util.SendBadRequestResponse(w, "Pipeline validation failed: "+err.Error())
+		response_util.SendBadRequestResponseGin(c, "Pipeline validation failed: "+err.Error())
 		return
 	}
 
 	// Get name and description from form or use defaults
-	name := r.FormValue("name")
+	name := c.PostForm("name")
 	if name == "" {
 		name = pipelineDef.Name
 		if name == "" {
@@ -74,7 +69,7 @@ func UploadPipelineHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	description := r.FormValue("description")
+	description := c.PostForm("description")
 	if description == "" {
 		description = pipelineDef.Description
 	}
@@ -88,12 +83,12 @@ func UploadPipelineHandler(w http.ResponseWriter, r *http.Request) {
 
 	createdPipeline, err := database.CreatePipeline(p)
 	if err != nil {
-		response_util.SendInternalServerErrorResponse(w, "Failed to create pipeline: "+err.Error())
+		response_util.SendInternalServerErrorResponseGin(c, "Failed to create pipeline: "+err.Error())
 		return
 	}
 
 	// Optionally run the pipeline immediately if "run" parameter is set
-	if r.FormValue("run") == "true" {
+	if c.PostForm("run") == "true" {
 		job := &models.Job{
 			Name:        name + " - Run",
 			PipelineID:  &createdPipeline.ID,
@@ -103,19 +98,17 @@ func UploadPipelineHandler(w http.ResponseWriter, r *http.Request) {
 
 		if err := queue.GetQueue().Enqueue(job); err != nil {
 			// Pipeline created but failed to run
-			response_util.SendOkResponse(w, "Pipeline created but failed to start: "+err.Error())
+			response_util.SendOkResponseGin(c, "Pipeline created but failed to start: "+err.Error())
 			return
 		}
 
-		jsonData, _ := json.Marshal(map[string]interface{}{
+		response_util.SendJsonResponseGin(c, 201, gin.H{
 			"pipeline":    createdPipeline,
 			"job_started": true,
 			"message":     "Pipeline created and started successfully",
 		})
-		response_util.SendJsonResponse(w, http.StatusCreated, jsonData)
 		return
 	}
 
-	jsonData, _ := json.Marshal(createdPipeline)
-	response_util.SendJsonResponse(w, http.StatusCreated, jsonData)
+	response_util.SendJsonResponseGin(c, 201, createdPipeline)
 }

@@ -1,45 +1,38 @@
 package handler
 
 import (
-	"encoding/json"
 	"goli/database"
-	"goli/middlewares"
 	"goli/models"
 	"goli/pipeline"
 	"goli/queue"
 	response_util "goli/utils"
-	"net/http"
 	"strconv"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 )
 
 // CreatePipelineHandler creates a new pipeline
-func CreatePipelineHandler(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
-
+func CreatePipelineHandler(c *gin.Context) {
 	var body struct {
 		Name        string `json:"name"`
 		Description string `json:"description"`
 		Definition  string `json:"definition"` // YAML content
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		response_util.SendBadRequestResponse(w, "Invalid request body: "+err.Error())
+	if err := c.ShouldBindJSON(&body); err != nil {
+		response_util.SendBadRequestResponseGin(c, "Invalid request body: "+err.Error())
 		return
 	}
 
 	// Parse and validate pipeline definition
 	pipelineDef, err := pipeline.ParsePipelineDefinition(body.Definition)
 	if err != nil {
-		response_util.SendBadRequestResponse(w, "Invalid pipeline definition: "+err.Error())
+		response_util.SendBadRequestResponseGin(c, "Invalid pipeline definition: "+err.Error())
 		return
 	}
 
 	if err := pipeline.ValidatePipelineDefinition(pipelineDef); err != nil {
-		response_util.SendBadRequestResponse(w, "Pipeline validation failed: "+err.Error())
+		response_util.SendBadRequestResponseGin(c, "Pipeline validation failed: "+err.Error())
 		return
 	}
 
@@ -52,70 +45,53 @@ func CreatePipelineHandler(w http.ResponseWriter, r *http.Request) {
 
 	createdPipeline, err := database.CreatePipeline(p)
 	if err != nil {
-		response_util.SendInternalServerErrorResponse(w, "Failed to create pipeline: "+err.Error())
+		response_util.SendInternalServerErrorResponseGin(c, "Failed to create pipeline: "+err.Error())
 		return
 	}
 
-	jsonData, _ := json.Marshal(createdPipeline)
-	response_util.SendJsonResponse(w, http.StatusCreated, jsonData)
+	response_util.SendJsonResponseGin(c, 201, createdPipeline)
 }
 
 // GetPipelineHandler retrieves a pipeline by ID
-func GetPipelineHandler(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
-
-	vars := mux.Vars(r)
-	id, err := strconv.ParseInt(vars["id"], 10, 64)
+func GetPipelineHandler(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response_util.SendBadRequestResponse(w, "Invalid pipeline ID")
+		response_util.SendBadRequestResponseGin(c, "Invalid pipeline ID")
 		return
 	}
 
 	p, err := database.GetPipeline(id)
 	if err != nil {
-		response_util.SendNotFoundResponse(w, "Pipeline not found")
+		response_util.SendNotFoundResponseGin(c, "Pipeline not found")
 		return
 	}
 
-	jsonData, _ := json.Marshal(p)
-	response_util.SendJsonResponse(w, http.StatusOK, jsonData)
+	response_util.SendJsonResponseGin(c, 200, p)
 }
 
 // ListPipelinesHandler lists all pipelines
-func ListPipelinesHandler(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
-
+func ListPipelinesHandler(c *gin.Context) {
 	pipelines, err := database.ListPipelines()
 	if err != nil {
-		response_util.SendInternalServerErrorResponse(w, "Failed to list pipelines: "+err.Error())
+		response_util.SendInternalServerErrorResponseGin(c, "Failed to list pipelines: "+err.Error())
 		return
 	}
 
-	jsonData, _ := json.Marshal(pipelines)
-	response_util.SendJsonResponse(w, http.StatusOK, jsonData)
+	response_util.SendJsonResponseGin(c, 200, pipelines)
 }
 
 // RunPipelineHandler creates a job to run a pipeline
-func RunPipelineHandler(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
-
-	vars := mux.Vars(r)
-	id, err := strconv.ParseInt(vars["id"], 10, 64)
+func RunPipelineHandler(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response_util.SendBadRequestResponse(w, "Invalid pipeline ID")
+		response_util.SendBadRequestResponseGin(c, "Invalid pipeline ID")
 		return
 	}
 
 	// Verify pipeline exists
 	_, err = database.GetPipeline(id)
 	if err != nil {
-		response_util.SendNotFoundResponse(w, "Pipeline not found")
+		response_util.SendNotFoundResponseGin(c, "Pipeline not found")
 		return
 	}
 
@@ -124,7 +100,7 @@ func RunPipelineHandler(w http.ResponseWriter, r *http.Request) {
 		TriggeredBy string `json:"triggered_by,omitempty"`
 	}
 
-	json.NewDecoder(r.Body).Decode(&body)
+	c.ShouldBindJSON(&body)
 
 	jobName := body.Name
 	if jobName == "" {
@@ -139,10 +115,10 @@ func RunPipelineHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := queue.GetQueue().Enqueue(job); err != nil {
-		response_util.SendInternalServerErrorResponse(w, "Failed to enqueue job: "+err.Error())
+		response_util.SendInternalServerErrorResponseGin(c, "Failed to enqueue job: "+err.Error())
 		return
 	}
 
-	jsonData, _ := json.Marshal(job)
-	response_util.SendJsonResponse(w, http.StatusCreated, jsonData)
+	response_util.SendJsonResponseGin(c, 201, job)
 }
+

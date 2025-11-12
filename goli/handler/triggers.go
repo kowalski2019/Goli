@@ -2,443 +2,364 @@ package handler
 
 import (
 	"bytes"
-	"encoding/json"
+	"context"
 	"errors"
-	"goli/middlewares"
+	"fmt"
 	"goli/types"
 	response_util "goli/utils"
 	"log"
-	"net/http"
 	"os/exec"
 	"strings"
+	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
-func StartADockerOrchestra(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
-	response_util.SendOkResponse(w, "Is fine we can start the docker compose")
-}
-func StopADockerOrchestra(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
-	response_util.SendOkResponse(w, "Is fine we can stop the  docker compose")
-}
-
-func StartADocker(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
-
+// Helper function to decode request body and validate
+func decodeAndValidateBodyGin(c *gin.Context) (*types.GoliRequestBody, bool) {
 	var body types.GoliRequestBody
-	err1 := json.NewDecoder(r.Body).Decode(&body)
-	if err1 != nil {
-		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
-		return
+	if err := c.ShouldBindJSON(&body); err != nil {
+		response_util.SendBadRequestResponseGin(c, fmt.Sprintf("Invalid request body: %v", err))
+		return nil, false
 	}
-	res, err := DoDockerContainerAction(body.Name, "start")
-	if err != nil {
-		response_util.SendInternalServerErrorResponse(w, err.Error())
-		return
-	}
-	response_util.SendOkResponse(w, res)
+	return &body, true
 }
 
-func StopADocker(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
+// Helper function to handle container action handlers
+func handleContainerAction(c *gin.Context, action string) {
+	body, ok := decodeAndValidateBodyGin(c)
+	if !ok {
 		return
 	}
 
-	var body types.GoliRequestBody
-	err1 := json.NewDecoder(r.Body).Decode(&body)
-	if err1 != nil {
-		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
+	if strings.TrimSpace(body.Name) == "" {
+		response_util.SendBadRequestResponseGin(c, "Container name is required")
 		return
 	}
-	res, err := DoDockerContainerAction(body.Name, "stop")
+
+	res, err := DoDockerContainerAction(body.Name, action)
 	if err != nil {
-		response_util.SendInternalServerErrorResponse(w, err.Error())
+		response_util.SendInternalServerErrorResponseGin(c, err.Error())
 		return
 	}
-	response_util.SendOkResponse(w, res)
+	response_util.SendOkResponseGin(c, res)
 }
 
-func RemoveADocker(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
+// Helper function to handle image action handlers
+func handleImageAction(c *gin.Context, action string) {
+	body, ok := decodeAndValidateBodyGin(c)
+	if !ok {
 		return
 	}
 
-	var body types.GoliRequestBody
-	err1 := json.NewDecoder(r.Body).Decode(&body)
-	if err1 != nil {
-		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
+	if strings.TrimSpace(body.Image) == "" {
+		response_util.SendBadRequestResponseGin(c, "Image name is required")
 		return
 	}
-	res, err := DoDockerContainerAction(body.Name, "rm")
+
+	res, err := DoDockerImageAction(body.Image, action)
 	if err != nil {
-		response_util.SendInternalServerErrorResponse(w, err.Error())
+		response_util.SendInternalServerErrorResponseGin(c, err.Error())
 		return
 	}
-	response_util.SendOkResponse(w, res)
+	response_util.SendOkResponseGin(c, res)
 }
 
-func PauseADocker(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
+// Helper function to execute docker commands with timeout and proper error handling
+func executeDockerCommand(ctx context.Context, args ...string) (string, string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
 
-	var body types.GoliRequestBody
-	err1 := json.NewDecoder(r.Body).Decode(&body)
-	if err1 != nil {
-		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
-		return
-	}
-	res, err := DoDockerContainerAction(body.Name, "pause")
-	if err != nil {
-		response_util.SendInternalServerErrorResponse(w, err.Error())
-		return
-	}
-	response_util.SendOkResponse(w, res)
-}
+	cmd := exec.CommandContext(ctx, "docker", args...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 
-func UnPauseADocker(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
-
-	var body types.GoliRequestBody
-	err1 := json.NewDecoder(r.Body).Decode(&body)
-	if err1 != nil {
-		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
-		return
-	}
-	res, err := DoDockerContainerAction(body.Name, "unpause")
-	if err != nil {
-		response_util.SendInternalServerErrorResponse(w, err.Error())
-		return
-	}
-	response_util.SendOkResponse(w, res)
-}
-
-func InspectADocker(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
-
-	var body types.GoliRequestBody
-	err1 := json.NewDecoder(r.Body).Decode(&body)
-	if err1 != nil {
-		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
-		return
-	}
-	res, err := DoDockerContainerAction(body.Name, "inspect")
-	if err != nil {
-		response_util.SendInternalServerErrorResponse(w, err.Error())
-		return
-	}
-	response_util.SendOkResponse(w, res)
-}
-
-func GetADockerLogs(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
-
-	var body types.GoliRequestBody
-	err1 := json.NewDecoder(r.Body).Decode(&body)
-	if err1 != nil {
-		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
-		return
-	}
-	res, err := DoDockerContainerAction(body.Name, "logs")
-	if err != nil {
-		response_util.SendInternalServerErrorResponse(w, err.Error())
-		return
-	}
-	response_util.SendOkResponse(w, res)
-}
-
-func GetDockerPS(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
-	cmd := exec.Command("docker", "ps", "-a")
-	var out bytes.Buffer
-	var err0 bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &err0
 	err := cmd.Run()
+	stdoutStr := stdout.String()
+	stderrStr := stderr.String()
 
 	if err != nil {
-		response_util.SendInternalServerErrorResponse(w, err0.String())
-		return
+		// Combine stderr with error message for better debugging
+		if stderrStr != "" {
+			return stdoutStr, stderrStr, fmt.Errorf("%v: %s", err, stderrStr)
+		}
+		return stdoutStr, stderrStr, err
 	}
-	response_util.SendOkResponse(w, out.String())
+
+	return stdoutStr, stderrStr, nil
 }
 
-func GetDockerImages(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
-	cmd := exec.Command("docker", "images")
-	var out bytes.Buffer
-	var err0 bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &err0
-	err := cmd.Run()
+func StartADockerOrchestra(c *gin.Context) {
+	response_util.SendOkResponseGin(c, "Is fine we can start the docker compose")
+}
 
+func StopADockerOrchestra(c *gin.Context) {
+	response_util.SendOkResponseGin(c, "Is fine we can stop the docker compose")
+}
+
+func StartADocker(c *gin.Context) {
+	handleContainerAction(c, "start")
+}
+
+func StopADocker(c *gin.Context) {
+	handleContainerAction(c, "stop")
+}
+
+func RemoveADocker(c *gin.Context) {
+	handleContainerAction(c, "rm")
+}
+
+func PauseADocker(c *gin.Context) {
+	handleContainerAction(c, "pause")
+}
+
+func UnPauseADocker(c *gin.Context) {
+	handleContainerAction(c, "unpause")
+}
+
+func InspectADocker(c *gin.Context) {
+	handleContainerAction(c, "inspect")
+}
+
+func GetADockerLogs(c *gin.Context) {
+	handleContainerAction(c, "logs")
+}
+
+func GetDockerPS(c *gin.Context) {
+	stdout, stderr, err := executeDockerCommand(c.Request.Context(), "ps", "-a")
 	if err != nil {
-		response_util.SendInternalServerErrorResponse(w, err0.String())
+		errorMsg := stderr
+		if errorMsg == "" {
+			errorMsg = err.Error()
+		}
+		response_util.SendInternalServerErrorResponseGin(c, errorMsg)
 		return
 	}
-	response_util.SendOkResponse(w, out.String())
-
+	response_util.SendOkResponseGin(c, stdout)
 }
-func RemoveAnDockerImage(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
 
-	var body types.GoliRequestBody
-	err1 := json.NewDecoder(r.Body).Decode(&body)
-	if err1 != nil {
-		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
-		return
-	}
-
-	res, err := DoDockerImageAction(body.Image, "rm")
+func GetDockerImages(c *gin.Context) {
+	stdout, stderr, err := executeDockerCommand(c.Request.Context(), "images")
 	if err != nil {
-		response_util.SendInternalServerErrorResponse(w, err.Error())
+		errorMsg := stderr
+		if errorMsg == "" {
+			errorMsg = err.Error()
+		}
+		response_util.SendInternalServerErrorResponseGin(c, errorMsg)
 		return
 	}
-	response_util.SendOkResponse(w, res)
+	response_util.SendOkResponseGin(c, stdout)
 }
 
-func PullAnDockerImage(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
-		return
-	}
-
-	var body types.GoliRequestBody
-	err1 := json.NewDecoder(r.Body).Decode(&body)
-	if err1 != nil {
-		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
-		return
-	}
-	res, err := DoDockerImageAction(body.Image, "pull")
-	if err != nil {
-		response_util.SendInternalServerErrorResponse(w, err.Error())
-		return
-	}
-	response_util.SendOkResponse(w, res)
+func RemoveAnDockerImage(c *gin.Context) {
+	handleImageAction(c, "rm")
 }
 
-func RunDockerContainer(w http.ResponseWriter, r *http.Request) {
-	if !middlewares.VerifyAuth(w, r) {
+func PullAnDockerImage(c *gin.Context) {
+	handleImageAction(c, "pull")
+}
+
+func RunDockerContainer(c *gin.Context) {
+	body, ok := decodeAndValidateBodyGin(c)
+	if !ok {
 		return
 	}
 
-	var body types.GoliRequestBody
-	err1 := json.NewDecoder(r.Body).Decode(&body)
-	if err1 != nil {
-		response_util.SendBadRequestResponse(w, "Invalid request body"+err1.Error())
+	// Validate required fields
+	if strings.TrimSpace(body.Name) == "" {
+		response_util.SendBadRequestResponseGin(c, "Container name is required")
+		return
+	}
+	if strings.TrimSpace(body.Image) == "" {
+		response_util.SendBadRequestResponseGin(c, "Image name is required")
 		return
 	}
 
-	container_name := body.Name
-	container_image := body.Image
-	container_exists := checkDockerExistence(container_name)
+	containerName := body.Name
+	containerImage := body.Image
+	containerExists := checkDockerExistence(c.Request.Context(), containerName)
 
-	if !container_exists {
-		log.Println("Container does not exist we have to create a new one")
-		res, err := createContainer(container_image, container_name, body.Network,
+	if !containerExists {
+		log.Printf("Container %s does not exist, creating new one", containerName)
+		res, err := createContainer(c.Request.Context(), containerImage, containerName, body.Network,
 			body.Port_Ex, body.Port_In, body.Volume_Ex, body.Volume_In, body.V_Map, body.Opts)
 		if err != nil {
-			response_util.SendInternalServerErrorResponse(w, err.Error())
-		} else {
-			response_util.SendOkResponse(w, res)
-		}
-	} else {
-		log.Println("Container already exists\n We have to kill first and create a new one")
-		final_res := ""
-		res1, err := DoDockerContainerAction(container_name, "stop")
-		if err != nil {
-			response_util.SendInternalServerErrorResponse(w, err.Error())
+			response_util.SendInternalServerErrorResponseGin(c, err.Error())
 			return
-		} else {
-			final_res += res1
-			res2, err := DoDockerContainerAction(container_name, "rm")
-			if err != nil {
-				response_util.SendInternalServerErrorResponse(w, err.Error())
-				return
-			} else {
-				final_res += res2
-				res3, err := DoDockerImageAction(container_image, "rm")
-				if err != nil {
-					response_util.SendInternalServerErrorResponse(w, err.Error())
-					return
-				} else {
-					final_res += res3
-					res4, err := DoDockerImageAction(container_image, "pull")
-					if err != nil {
-						response_util.SendInternalServerErrorResponse(w, err.Error())
-						return
-					} else {
-						final_res += res4
-					}
-				}
-			}
 		}
-
-		res5, err := createContainer(container_image, container_name, body.Network,
-			body.Port_Ex, body.Port_In, body.Volume_Ex, body.Volume_In, body.V_Map, body.Opts)
-
-		if err != nil {
-			response_util.SendInternalServerErrorResponse(w, err.Error())
-		} else {
-			final_res += res5
-			response_util.SendOkResponse(w, final_res)
-		}
-
+		response_util.SendOkResponseGin(c, res)
+		return
 	}
 
+	// Container exists - stop, remove, pull image, and recreate
+	log.Printf("Container %s already exists, recreating", containerName)
+	var results []string
+
+	// Stop container
+	if res, err := DoDockerContainerAction(containerName, "stop"); err != nil {
+		response_util.SendInternalServerErrorResponseGin(c, fmt.Sprintf("Failed to stop container: %v", err))
+		return
+	} else {
+		results = append(results, res)
+	}
+
+	// Remove container
+	if res, err := DoDockerContainerAction(containerName, "rm"); err != nil {
+		response_util.SendInternalServerErrorResponseGin(c, fmt.Sprintf("Failed to remove container: %v", err))
+		return
+	} else {
+		results = append(results, res)
+	}
+
+	// Remove old image (ignore errors - image might not exist)
+	if res, err := DoDockerImageAction(containerImage, "rm"); err == nil {
+		results = append(results, res)
+	}
+
+	// Pull latest image
+	if res, err := DoDockerImageAction(containerImage, "pull"); err != nil {
+		response_util.SendInternalServerErrorResponseGin(c, fmt.Sprintf("Failed to pull image: %v", err))
+		return
+	} else {
+		results = append(results, res)
+	}
+
+	// Create new container
+	res, err := createContainer(c.Request.Context(), containerImage, containerName, body.Network,
+		body.Port_Ex, body.Port_In, body.Volume_Ex, body.Volume_In, body.V_Map, body.Opts)
+	if err != nil {
+		response_util.SendInternalServerErrorResponseGin(c, err.Error())
+		return
+	}
+	results = append(results, res)
+
+	response_util.SendOkResponseGin(c, strings.Join(results, "\n"))
 }
 
-func checkDockerExistence(name string) bool {
-	cmd := exec.Command("docker", "container", "logs", name)
-	var out bytes.Buffer
-	var err1 bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &err1
-	err := cmd.Run()
-
+func checkDockerExistence(ctx context.Context, name string) bool {
+	// Use docker ps with filter to check if container exists (more efficient than logs)
+	stdout, _, err := executeDockerCommand(ctx, "ps", "-a", "--filter", fmt.Sprintf("name=^%s$", name), "--format", "{{.Names}}")
 	if err != nil {
 		return false
-	} else {
-		if strings.Contains(out.String(), "No such container") {
-			return false
-		} else {
-			return true
-		}
 	}
+	return strings.TrimSpace(stdout) == name
 }
 
 func DoDockerContainerAction(container string, action string) (string, error) {
+	// Validate container name to prevent command injection
+	if strings.TrimSpace(container) == "" {
+		return "", errors.New("container name cannot be empty")
+	}
 
-	var out bytes.Buffer
-	var err0 bytes.Buffer
-	var cmd *exec.Cmd
-
+	var args []string
 	switch action {
 	case "start":
-		log.Printf("docker start %s", container)
-		cmd = exec.Command("docker", "start", container)
+		args = []string{"start", container}
 	case "stop":
-		log.Printf("docker stop %s", container)
-		cmd = exec.Command("docker", "stop", container)
+		args = []string{"stop", container}
 	case "rm":
-		log.Printf("docker rm -f %s", container)
-		cmd = exec.Command("docker", "rm", "-f", container)
+		args = []string{"rm", "-f", container}
 	case "pause":
-		log.Printf("docker pause %s", container)
-		cmd = exec.Command("docker", "pause", container)
+		args = []string{"pause", container}
 	case "unpause":
-		log.Printf("docker unpause %s", container)
-		cmd = exec.Command("docker", "unpause", container)
+		args = []string{"unpause", container}
 	case "inspect":
-		log.Printf("docker inspect %s", container)
-		cmd = exec.Command("docker", "inspect", container)
+		args = []string{"inspect", container}
 	case "logs":
-		log.Printf("docker logs %s", container)
-		cmd = exec.Command("docker", "logs", container)
+		args = []string{"logs", container}
 	default:
-		return "", errors.New("unknown action")
+		return "", fmt.Errorf("unknown action: %s", action)
 	}
-	cmd.Stdout = &out
-	cmd.Stderr = &err0
-	err := cmd.Run()
+
+	log.Printf("Executing: docker %s", strings.Join(args, " "))
+	ctx := context.Background()
+	stdout, stderr, err := executeDockerCommand(ctx, args...)
 	if err != nil {
+		if stderr != "" {
+			return "", fmt.Errorf("%v: %s", err, stderr)
+		}
 		return "", err
-	} else {
-		return out.String(), nil
 	}
+	return stdout, nil
 }
 
 func DoDockerImageAction(image string, action string) (string, error) {
+	// Validate image name to prevent command injection
+	if strings.TrimSpace(image) == "" {
+		return "", errors.New("image name cannot be empty")
+	}
 
-	var out bytes.Buffer
-	var err0 bytes.Buffer
-	var cmd *exec.Cmd
-
+	var args []string
 	switch action {
 	case "rm":
-		log.Printf("docker rmi -f %s", image)
-		cmd = exec.Command("docker", "rmi", "-f", image)
+		args = []string{"rmi", "-f", image}
 	case "pull":
-		log.Printf("docker pull %s", image)
-		cmd = exec.Command("docker", "pull", image)
+		args = []string{"pull", image}
 	default:
-		return "", errors.New("unknown action")
+		return "", fmt.Errorf("unknown action: %s", action)
 	}
-	cmd.Stdout = &out
-	cmd.Stderr = &err0
-	err := cmd.Run()
+
+	log.Printf("Executing: docker %s", strings.Join(args, " "))
+	ctx := context.Background()
+	stdout, stderr, err := executeDockerCommand(ctx, args...)
 	if err != nil {
+		if stderr != "" {
+			return "", fmt.Errorf("%v: %s", err, stderr)
+		}
 		return "", err
-	} else {
-		return out.String(), nil
 	}
+	return stdout, nil
 }
 
-func buildFinalArgs(opts []string, image string, args ...string) []string {
-	final_args := []string{}
-	final_args = append(final_args, args...)
-	final_args = append(final_args, opts...)
-	final_args = append(final_args, "-d", image)
-	return final_args
-}
+func createContainer(ctx context.Context, image string, name string, network string, portEx string, portIn string, volumeEx string, volumeIn string, vMap bool, opts string) (string, error) {
+	// Validate required fields
+	if strings.TrimSpace(image) == "" {
+		return "", errors.New("image name cannot be empty")
+	}
+	if strings.TrimSpace(name) == "" {
+		return "", errors.New("container name cannot be empty")
+	}
 
-func createContainer(image string, name string, network string, port_ex string, port_in string, volume_ex string, volume_in string, v_map bool, opts ...string) (string, error) {
+	// Build docker run command arguments
+	args := []string{"run", "--detach", "--name", name}
 
-	volume_mapping := volume_ex + ":" + volume_in
-	port_mapping := port_ex + ":" + port_in
-	var cmd *exec.Cmd
+	// Add network configuration
 	if network == "host" {
-		if v_map {
-			log.Printf("docker run --network %s --name %s -v %s -d %s", network, name, volume_mapping, image)
-			cmd_args := buildFinalArgs(opts, image, "run", "--network", network, "--name", name, "-v", volume_mapping)
-			log.Println("Final Command: ", "docker ", cmd_args)
-			cmd = exec.Command("docker", cmd_args...)
-		} else {
-			log.Printf("docker run --network %s --name %s -d %s", network, name, image)
-			cmd_args := buildFinalArgs(opts, image, "run", "--network", network, "--name", name)
-			log.Println("Final Command: ", "docker ", cmd_args)
-			cmd = exec.Command("docker", cmd_args...)
-		}
-
-	} else {
-		if v_map {
-			log.Printf("docker run -p %s --name %s -v %s -d %s", port_mapping, name, volume_mapping, image)
-			cmd_args := buildFinalArgs(opts, image, "run", "-p", port_mapping, "--name", name, "-v", volume_mapping)
-			log.Println("Final Command: ", "docker ", cmd_args)
-			cmd = exec.Command("docker", cmd_args...)
-		} else {
-			log.Printf("docker run -p %s --name %s -d %s", port_mapping, name, image)
-			cmd_args := buildFinalArgs(opts, image, "run", "-p", port_mapping, "--name", name)
-			log.Println("Final Command: ", "docker ", cmd_args)
-			cmd = exec.Command("docker", cmd_args...)
-		}
-
+		args = append(args, "--network", "host")
+	} else if strings.TrimSpace(portEx) != "" && strings.TrimSpace(portIn) != "" {
+		// Only add port mapping if not using host network
+		portMapping := fmt.Sprintf("%s:%s", portEx, portIn)
+		args = append(args, "-p", portMapping)
 	}
-	var out bytes.Buffer
-	var err1 bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &err1
-	err := cmd.Run()
 
+	// Add volume mapping if enabled
+	if vMap && strings.TrimSpace(volumeEx) != "" && strings.TrimSpace(volumeIn) != "" {
+		volumeMapping := fmt.Sprintf("%s:%s", volumeEx, volumeIn)
+		args = append(args, "-v", volumeMapping)
+	}
+
+	// Parse and add additional options
+	if strings.TrimSpace(opts) != "" {
+		// Split opts by space and append (basic parsing - could be improved)
+		optParts := strings.Fields(opts)
+		args = append(args, optParts...)
+	}
+
+	// Add image name at the end
+	args = append(args, image)
+
+	log.Printf("Executing: docker %s", strings.Join(args, " "))
+
+	stdout, stderr, err := executeDockerCommand(ctx, args...)
 	if err != nil {
-		return "", err
+		errorMsg := stderr
+		if errorMsg == "" {
+			errorMsg = err.Error()
+		}
+		return "", fmt.Errorf("failed to create container: %s", errorMsg)
 	}
-	return "Docker " + out.String() + " Successfully started!", nil
+
+	containerID := strings.TrimSpace(stdout)
+	return fmt.Sprintf("Docker container %s (%s) successfully started!", name, containerID), nil
 }

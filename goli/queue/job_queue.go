@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"fmt"
 	"goli/database"
 	"goli/models"
 	"goli/pipeline"
@@ -18,18 +19,13 @@ type JobQueue struct {
 	stopChan chan struct{}
 	mu       sync.RWMutex
 	active   map[int64]*models.Job
+	hub      *websocket.Hub
 }
 
 var (
 	globalQueue *JobQueue
-	wsHub       *websocket.Hub
 	once        sync.Once
 )
-
-// SetWebSocketHub sets the WebSocket hub for broadcasting updates
-func SetWebSocketHub(hub *websocket.Hub) {
-	wsHub = hub
-}
 
 // GetQueue returns the global job queue instance
 func GetQueue() *JobQueue {
@@ -47,6 +43,11 @@ func NewJobQueue(workers int) *JobQueue {
 		stopChan: make(chan struct{}),
 		active:   make(map[int64]*models.Job),
 	}
+}
+
+// SetWebSocketHub sets the WebSocket hub for broadcasting updates
+func (q *JobQueue) SetWebSocketHub(hub *websocket.Hub) {
+	q.hub = hub
 }
 
 // Start starts the job queue workers
@@ -85,8 +86,13 @@ func (q *JobQueue) Enqueue(job *models.Job) error {
 		log.Printf("Job %d (%s) enqueued", job.ID, job.Name)
 		return nil
 	case <-time.After(30 * time.Second):
-		return ErrQueueFull
+		return &QueueError{Message: "Queue is full, cannot enqueue job"}
 	}
+}
+
+// EnqueueJob is an alias for Enqueue (for compatibility)
+func (q *JobQueue) EnqueueJob(job *models.Job) error {
+	return q.Enqueue(job)
 }
 
 // GetActiveJob returns an active job by ID
@@ -102,6 +108,61 @@ func (q *JobQueue) RemoveActiveJob(id int64) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	delete(q.active, id)
+}
+
+// CancelJob cancels a running or pending job
+func (q *JobQueue) CancelJob(id int64) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	// Check if job is in active map (running)
+	job, exists := q.active[id]
+	if exists {
+		// Mark job as cancelled in database
+		if err := database.UpdateJobStatus(id, models.JobStatusCancelled, "Job cancelled by user"); err != nil {
+			return err
+		}
+		job.Status = models.JobStatusCancelled
+		completedAt := time.Now()
+		job.CompletedAt = &completedAt
+
+		// Broadcast update
+		if q.hub != nil {
+			q.hub.BroadcastJobUpdate(job)
+		}
+
+		// Remove from active map
+		delete(q.active, id)
+		log.Printf("Job %d cancelled (was running)", id)
+		return nil
+	}
+
+	// Job might be pending in queue or already completed
+	// Check database status
+	dbJob, err := database.GetJob(id)
+	if err != nil {
+		return err
+	}
+
+	// Only cancel if pending or running
+	if dbJob.Status == models.JobStatusPending || dbJob.Status == models.JobStatusRunning {
+		if err := database.UpdateJobStatus(id, models.JobStatusCancelled, "Job cancelled by user"); err != nil {
+			return err
+		}
+		completedAt := time.Now()
+		dbJob.CompletedAt = &completedAt
+		dbJob.Status = models.JobStatusCancelled
+
+		// Broadcast update
+		if q.hub != nil {
+			q.hub.BroadcastJobUpdate(dbJob)
+		}
+
+		log.Printf("Job %d cancelled (was %s)", id, dbJob.Status)
+		return nil
+	}
+
+	return &QueueError{Message: fmt.Sprintf("Job %d cannot be cancelled (status: %s)", id, dbJob.Status)}
 }
 
 // worker processes jobs from the queue
@@ -138,8 +199,8 @@ func (q *JobQueue) processJob(job *models.Job) {
 	job.StartedAt = &now
 
 	// Broadcast update
-	if wsHub != nil {
-		wsHub.BroadcastJobUpdate(job)
+	if q.hub != nil {
+		q.hub.BroadcastJobUpdate(job)
 	}
 
 	// Execute pipeline if pipeline_id is provided
@@ -178,19 +239,15 @@ func (q *JobQueue) processJob(job *models.Job) {
 	}
 
 	// Broadcast final update
-	if wsHub != nil {
-		wsHub.BroadcastJobUpdate(job)
+	if q.hub != nil {
+		q.hub.BroadcastJobUpdate(job)
 	}
 
 	q.RemoveActiveJob(job.ID)
 	log.Printf("Worker: Job %d (%s) completed", job.ID, job.Name)
 }
 
-// Errors
-var (
-	ErrQueueFull = &QueueError{Message: "Queue is full, cannot enqueue job"}
-)
-
+// QueueError represents a queue error
 type QueueError struct {
 	Message string
 }

@@ -4,21 +4,22 @@ import (
 	aux "goli/auxiliary"
 	"goli/database"
 	"goli/handler"
+	"goli/middlewares"
 	"goli/queue"
 	"goli/websocket"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 )
 
 var port = aux.GetFromConfig("constants.port")
 
-var host = "127.0.0.1:" + port
+var host = "0.0.0.0:" + port
 
 func main() {
 	// Initialize database
@@ -33,7 +34,7 @@ func main() {
 
 	// Initialize and start job queue
 	jobQueue := queue.GetQueue()
-	queue.SetWebSocketHub(wsHub) // Pass hub to queue for broadcasting
+	jobQueue.SetWebSocketHub(wsHub) // Pass hub to queue for broadcasting
 	jobQueue.Start()
 	defer jobQueue.Stop()
 
@@ -47,51 +48,101 @@ func main() {
 		os.Exit(0)
 	}()
 
-	r := mux.NewRouter()
-	encr := r.PathPrefix("/api/v1/").Subrouter()
+	// Create Gin router
+	r := gin.Default()
 
-	// Job management endpoints
-	encr.HandleFunc("/jobs", handler.ListJobsHandler).Methods(http.MethodGet)
-	encr.HandleFunc("/jobs", handler.CreateJobHandler).Methods(http.MethodPost)
-	encr.HandleFunc("/jobs/{id}", handler.GetJobHandler).Methods(http.MethodGet)
+	// Add logging middleware
+	r.Use(middlewares.RequestLogger())
 
-	// Pipeline management endpoints
-	encr.HandleFunc("/pipelines", handler.ListPipelinesHandler).Methods(http.MethodGet)
-	encr.HandleFunc("/pipelines", handler.CreatePipelineHandler).Methods(http.MethodPost)
-	encr.HandleFunc("/pipelines/upload", handler.UploadPipelineHandler).Methods(http.MethodPost)
-	encr.HandleFunc("/pipelines/{id}", handler.GetPipelineHandler).Methods(http.MethodGet)
-	encr.HandleFunc("/pipelines/{id}/run", handler.RunPipelineHandler).Methods(http.MethodPost)
+	// CORS middleware
+	r.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 
-	// WebSocket endpoint
-	r.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		handler.ServeWebSocket(wsHub, w, r)
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
 	})
 
-	//encr.HandleFunc("/docker/compose/prepare", handler.StartAwakeDockers).Methods(http.MethodPost)
-	encr.HandleFunc("/docker/compose/up", handler.StartADockerOrchestra).Methods(http.MethodPost)
-	encr.HandleFunc("/docker/compose/down", handler.StopADockerOrchestra).Methods(http.MethodPost)
+	// Public API routes (no auth required)
+	public := r.Group("/api/v1")
+	{
+		// Setup endpoints
+		public.POST("/setup/verify", handler.VerifySetupPasswordHandler)
+		public.GET("/setup/status", handler.GetSetupStatusHandler)
 
-	encr.HandleFunc("/docker/container/start", handler.StartADocker).Methods(http.MethodPost)
-	encr.HandleFunc("/docker/container/stop", handler.StopADocker).Methods(http.MethodPost)
-	encr.HandleFunc("/docker/container/rm", handler.RemoveADocker).Methods(http.MethodPost)
-	encr.HandleFunc("/docker/container/run", handler.RunDockerContainer).Methods(http.MethodPost)
+		// Auth endpoints
+		public.POST("/auth/login", handler.LoginHandler)
+		public.POST("/auth/2fa/verify", handler.Verify2FAHandler)
+		public.POST("/auth/logout", handler.LogoutHandler)
+	}
 
-	encr.HandleFunc("/docker/container/pause", handler.PauseADocker).Methods(http.MethodPost)
-	encr.HandleFunc("/docker/container/unpause", handler.UnPauseADocker).Methods(http.MethodPost)
-	encr.HandleFunc("/docker/container/inspect", handler.InspectADocker).Methods(http.MethodPost)
-	encr.HandleFunc("/docker/container/logs", handler.GetADockerLogs).Methods(http.MethodPost)
-	encr.HandleFunc("/docker/image/rm", handler.RemoveAnDockerImage).Methods(http.MethodPost)
-	encr.HandleFunc("/docker/image/pull", handler.PullAnDockerImage).Methods(http.MethodPost)
+	// Protected API routes (auth required)
+	api := r.Group("/api/v1")
+	api.Use(middlewares.AuthMiddleware())
+	{
+		// Job management endpoints
+		api.GET("/jobs", handler.ListJobsHandler)
+		api.POST("/jobs", handler.CreateJobHandler)
+		api.GET("/jobs/:id", handler.GetJobHandler)
+		api.POST("/jobs/:id/cancel", handler.CancelJobHandler)
 
-	encr.HandleFunc("/docker/ps", handler.GetDockerPS).Methods(http.MethodPost)
-	encr.HandleFunc("/docker/images", handler.GetDockerImages).Methods(http.MethodPost)
+		// Pipeline management endpoints
+		api.GET("/pipelines", handler.ListPipelinesHandler)
+		api.POST("/pipelines", handler.CreatePipelineHandler)
+		api.POST("/pipelines/upload", handler.UploadPipelineHandler)
+		api.GET("/pipelines/:id", handler.GetPipelineHandler)
+		api.POST("/pipelines/:id/run", handler.RunPipelineHandler)
 
-	// Serve static files (UI)
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./web/")))
+		// Config management endpoints
+		api.GET("/config", handler.GetConfigHandler)
+		api.POST("/config", handler.UpdateConfigHandler)
 
-	log.Println("Action Helper Backend is running on " + host)
-	log.Fatal(http.ListenAndServe(host, handlers.CORS(
-		handlers.AllowedHeaders(
-			[]string{"X-Requested-With", "Content-Type", "Authorization"}),
-		handlers.AllowedMethods([]string{"GET", "POST"}), handlers.AllowedOrigins([]string{"*"}))(r)))
+		// User management endpoints
+		api.GET("/users", handler.ListUsersHandler)
+		api.POST("/users", handler.CreateUserHandler)
+		api.PUT("/users/:id", handler.UpdateUserHandler)
+		api.DELETE("/users/:id", handler.DeleteUserHandler)
+
+		// Docker endpoints (keeping existing handlers - they need to be converted separately)
+		// api.POST("/docker/compose/up", handler.StartADockerOrchestra)
+		// api.POST("/docker/compose/down", handler.StopADockerOrchestra)
+		// ... (other docker endpoints)
+	}
+
+	// WebSocket endpoint (no auth middleware, but can check auth in handler if needed)
+	r.GET("/ws", func(c *gin.Context) {
+		handler.ServeWebSocket(wsHub, c)
+	})
+
+	// Serve static files (UI) - use NoRoute to handle all non-API routes
+	// This allows the frontend SPA to handle client-side routing
+	r.NoRoute(func(c *gin.Context) {
+		// Check if the request is for a static file (has extension)
+		path := c.Request.URL.Path
+
+		// If it's an API or WebSocket route, return 404
+		if strings.HasPrefix(path, "/api") || strings.HasPrefix(path, "/ws") {
+			c.JSON(404, gin.H{"error": "Not found"})
+			return
+		}
+
+		// Try to serve the file, if not found, serve index.html (for SPA routing)
+		filePath := "./web" + path
+		if _, err := os.Stat(filePath); err == nil && !strings.HasSuffix(path, "/") {
+			c.File(filePath)
+			return
+		}
+
+		// Serve index.html for all other routes (SPA fallback)
+		c.File("./web/index.html")
+	})
+
+	log.Println("Goli CI/CD Backend is running on " + host)
+	log.Fatal(http.ListenAndServe(host, r))
 }
