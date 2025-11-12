@@ -62,9 +62,17 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm">
                 <button 
                   @click="viewJobLogs(job.id)"
-                  class="text-primary-600 hover:text-primary-800"
+                  class="text-primary-600 hover:text-primary-800 mr-3"
                 >
                   View Logs
+                </button>
+                <button 
+                  v-if="job.status === 'pending' || job.status === 'running'"
+                  @click="cancelJob(job.id)"
+                  :disabled="isCancelling === job.id"
+                  class="text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {{ isCancelling === job.id ? 'Cancelling...' : 'Cancel' }}
                 </button>
               </td>
             </tr>
@@ -77,9 +85,13 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getJobs } from '../api/client'
+import { getJobs, cancelJob as cancelJobAPI } from '../api/client'
+
+const emit = defineEmits(['view-logs'])
+
 const loading = ref(false)
 const recentJobs = ref([])
+const isCancelling = ref(null)
 const stats = ref({
   total: 0,
   running: 0,
@@ -129,8 +141,23 @@ function updateStats(jobs) {
 }
 
 function viewJobLogs(jobId) {
-  // Navigate to job details or open modal
-  window.location.hash = `#jobs?job=${jobId}`
+  emit('view-logs', jobId)
+}
+
+async function cancelJob(jobId) {
+  if (!confirm('Are you sure you want to cancel this job?')) {
+    return
+  }
+  
+  isCancelling.value = jobId
+  try {
+    await cancelJobAPI(jobId)
+    await loadJobs()
+  } catch (error) {
+    alert(error.message || 'Failed to cancel job')
+  } finally {
+    isCancelling.value = null
+  }
 }
 
 onMounted(() => {

@@ -89,13 +89,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, onUnmounted } from 'vue'
 import { getJob } from '../api/client'
 
 const props = defineProps({
   jobId: {
     type: Number,
     required: true
+  },
+  wsMessage: {
+    type: Object,
+    default: null
   }
 })
 
@@ -106,6 +110,7 @@ const loadingLogs = ref(false)
 const steps = ref([])
 const selectedStep = ref(null)
 const jobLogs = ref('')
+let ws = null
 
 function getStepStatusClass(status) {
   const classes = {
@@ -147,11 +152,82 @@ watch(() => props.jobId, () => {
   loadJobDetails()
 }, { immediate: true })
 
-// Auto-refresh logs for running jobs
+// Handle WebSocket log updates
+watch(() => props.wsMessage, (message) => {
+  if (!message || message.type !== 'log_update') return
+  
+  const data = message.data
+  if (data.job_id === props.jobId) {
+    // Update job logs
+    if (data.logs) {
+      jobLogs.value = data.logs
+    }
+    
+    // Update step logs if this is for the selected step
+    if (data.step_id && selectedStep.value && selectedStep.value.id === data.step_id) {
+      selectedStep.value.logs = data.step_logs
+      // Also update in steps array
+      const stepIndex = steps.value.findIndex(s => s.id === data.step_id)
+      if (stepIndex !== -1) {
+        steps.value[stepIndex].logs = data.step_logs
+      }
+    }
+  }
+}, { deep: true })
+
+// Setup WebSocket connection for real-time log updates
+function setupWebSocket() {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const wsUrl = `${protocol}//${window.location.host}/ws`
+  
+  try {
+    ws = new WebSocket(wsUrl)
+    
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data)
+        if (message.type === 'log_update' && message.data.job_id === props.jobId) {
+          const data = message.data
+          
+          // Update job logs
+          if (data.logs) {
+            jobLogs.value = data.logs
+          }
+          
+          // Update step logs if this is for the selected step
+          if (data.step_id && selectedStep.value && selectedStep.value.id === data.step_id) {
+            selectedStep.value.logs = data.step_logs
+            // Also update in steps array
+            const stepIndex = steps.value.findIndex(s => s.id === data.step_id)
+            if (stepIndex !== -1) {
+              steps.value[stepIndex].logs = data.step_logs
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error)
+      }
+    }
+    
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error)
+    }
+    
+    ws.onclose = () => {
+      // Auto-reconnect after 3 seconds
+      setTimeout(setupWebSocket, 3000)
+    }
+  } catch (error) {
+    console.error('Error setting up WebSocket:', error)
+  }
+}
+
+// Auto-refresh logs for running jobs (fallback if WebSocket fails)
 let refreshInterval = null
 watch(selectedStep, (step) => {
   if (step && step.status === 'running') {
-    refreshInterval = setInterval(loadJobDetails, 2000)
+    // Use longer interval since we have WebSocket updates
+    refreshInterval = setInterval(loadJobDetails, 30000) // 30 seconds
   } else {
     if (refreshInterval) {
       clearInterval(refreshInterval)
@@ -162,6 +238,16 @@ watch(selectedStep, (step) => {
 
 onMounted(() => {
   loadJobDetails()
+  setupWebSocket()
+})
+
+onUnmounted(() => {
+  if (ws) {
+    ws.close()
+  }
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+  }
 })
 </script>
 

@@ -61,18 +61,31 @@
       @close="showUploadModal = false"
       @uploaded="handlePipelineUploaded"
     />
+
+    <!-- Pipeline Detail Modal -->
+    <PipelineDetailModal 
+      v-if="selectedPipeline"
+      :pipeline="selectedPipeline"
+      @close="selectedPipeline = null"
+      @view-logs="handleViewLogs"
+      @run-pipeline="handleRunPipeline"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getPipelines, runPipeline } from '../api/client'
+import { getPipelines, runPipeline as runPipelineAPI } from '../api/client'
 import UploadPipelineModal from './UploadPipelineModal.vue'
+import PipelineDetailModal from './PipelineDetailModal.vue'
+
+const emit = defineEmits(['view-logs'])
 
 const loading = ref(false)
 const pipelines = ref([])
 const showUploadModal = ref(false)
 const runningPipeline = ref(null)
+const selectedPipeline = ref(null)
 
 function formatDate(dateString) {
   if (!dateString) return '-'
@@ -92,10 +105,10 @@ async function loadPipelines() {
   }
 }
 
-async function runPipelineHandler(id, name) {
+async function runPipeline(id, name) {
   runningPipeline.value = id
   try {
-    await runPipeline(id, {
+    await runPipelineAPI(id, {
       name: `${name} - Run`,
       triggered_by: 'UI'
     })
@@ -108,8 +121,23 @@ async function runPipelineHandler(id, name) {
 }
 
 function viewPipeline(id) {
-  // Navigate to pipeline details
-  console.log('View pipeline:', id)
+  const pipeline = pipelines.value.find(p => p.id === id)
+  if (pipeline) {
+    selectedPipeline.value = pipeline
+  }
+}
+
+function handleViewLogs(jobId) {
+  emit('view-logs', jobId)
+  selectedPipeline.value = null
+}
+
+function handleRunPipeline(pipelineId) {
+  const pipeline = pipelines.value.find(p => p.id === pipelineId)
+  if (pipeline) {
+    selectedPipeline.value = null
+    runPipeline(pipelineId, pipeline.name)
+  }
 }
 
 function handlePipelineUploaded() {

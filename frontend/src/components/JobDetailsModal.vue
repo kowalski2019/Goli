@@ -98,6 +98,14 @@
       </div>
 
       <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+        <button 
+          v-if="job.status === 'pending' || job.status === 'running'"
+          @click="cancelJob"
+          :disabled="isCancelling"
+          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {{ isCancelling ? 'Cancelling...' : 'Cancel Job' }}
+        </button>
         <button @click="$emit('close')" class="btn btn-secondary">
           Close
         </button>
@@ -110,7 +118,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
+import { cancelJob as cancelJobAPI, getJob } from '../api/client'
 
 const props = defineProps({
   job: {
@@ -119,7 +128,9 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'view-logs', 'job-updated'])
+
+const isCancelling = ref(false)
 
 const sortedSteps = computed(() => {
   if (!props.job || !props.job.steps || !Array.isArray(props.job.steps)) return []
@@ -153,6 +164,28 @@ function viewStepLogs(step) {
 
 function viewLogs() {
   emit('view-logs', props.job.id)
+}
+
+async function cancelJob() {
+  if (!confirm('Are you sure you want to cancel this job?')) {
+    return
+  }
+  
+  isCancelling.value = true
+  try {
+    await cancelJobAPI(props.job.id)
+    // Reload job details
+    const updatedJob = await getJob(props.job.id)
+    emit('job-updated', updatedJob)
+    // Close modal after a short delay
+    setTimeout(() => {
+      emit('close')
+    }, 1000)
+  } catch (error) {
+    alert(error.message || 'Failed to cancel job')
+  } finally {
+    isCancelling.value = false
+  }
 }
 </script>
 

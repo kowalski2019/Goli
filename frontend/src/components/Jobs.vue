@@ -56,9 +56,17 @@
                 </button>
                 <button 
                   @click.stop="viewJobLogs(job.id)"
-                  class="text-primary-600 hover:text-primary-800"
+                  class="text-primary-600 hover:text-primary-800 mr-3"
                 >
                   Logs
+                </button>
+                <button 
+                  v-if="job.status === 'pending' || job.status === 'running'"
+                  @click.stop="cancelJob(job.id)"
+                  :disabled="isCancelling === job.id"
+                  class="text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {{ isCancelling === job.id ? 'Cancelling...' : 'Cancel' }}
                 </button>
               </td>
             </tr>
@@ -93,16 +101,19 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getJobs } from '../api/client'
+import { getJobs, cancelJob as cancelJobAPI } from '../api/client'
 import JobDetailsModal from './JobDetailsModal.vue'
 import JobLogsModal from './JobLogsModal.vue'
 import CreateJobModal from './CreateJobModal.vue'
+
+const emit = defineEmits(['view-logs'])
 
 const loading = ref(false)
 const jobs = ref([])
 const selectedJob = ref(null)
 const logsJobId = ref(null)
 const showCreateModal = ref(false)
+const isCancelling = ref(null)
 
 function formatDate(dateString) {
   if (!dateString) return '-'
@@ -145,12 +156,33 @@ function viewJobDetails(jobId) {
 }
 
 function viewJobLogs(jobId) {
-  logsJobId.value = jobId
+  emit('view-logs', jobId)
+}
+
+function handleViewLogs(jobId) {
+  emit('view-logs', jobId)
+  selectedJob.value = null
 }
 
 function handleJobCreated() {
   showCreateModal.value = false
   loadJobs()
+}
+
+async function cancelJob(jobId) {
+  if (!confirm('Are you sure you want to cancel this job?')) {
+    return
+  }
+  
+  isCancelling.value = jobId
+  try {
+    await cancelJobAPI(jobId)
+    await loadJobs()
+  } catch (error) {
+    alert(error.message || 'Failed to cancel job')
+  } finally {
+    isCancelling.value = null
+  }
 }
 
 onMounted(() => {

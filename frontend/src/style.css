@@ -21,7 +21,7 @@
 
 @layer components {
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200 cursor-pointer;
   }
   
   .btn-primary {
@@ -35,5 +35,10 @@
   .card {
     @apply bg-white rounded-lg shadow-md p-6;
   }
+}
+
+/* All buttons should have pointer cursor */
+button {
+  cursor: pointer;
 }
 
