@@ -1,88 +1,171 @@
-# Goli UI Development Guide
+# Goli Frontend
 
-## Current UI Structure
+Modern Vue.js frontend for Goli CI/CD platform.
 
-The current UI is a simple HTML/JavaScript dashboard located in `goli/web/index.html`. This serves as a temporary interface while the full Vue.js application is being developed.
+## Technology Stack
 
-## Future UI Architecture
-
-### Technology Stack
-- **ViteJS** - Build tool and dev server
-- **Vue 3** - Frontend framework
-- **JavaScript** - Programming language
+- **Vue 3** - Progressive JavaScript framework
+- **Vite** - Next-generation frontend tooling
 - **Tailwind CSS** - Utility-first CSS framework
+- **WebSocket** - Real-time updates
 
-### Directory Structure
+## Features
+
+- 🎨 Modern, responsive UI with Tailwind CSS
+- 📊 Real-time dashboard with job statistics
+- 📝 Pipeline management and YAML upload
+- 📋 Job execution and monitoring
+- 📜 Step-by-step logs viewer
+- 🔄 Real-time updates via WebSocket
+- 👥 User management and settings
+- 🔐 Authentication with 2FA support
+
+## Development
+
+### Prerequisites
+
+- Node.js 18+ and npm
+
+### Setup
+
+```bash
+cd frontend
+npm install
+```
+
+### Development Server
+
+```bash
+npm run dev
+```
+
+The dev server runs on `http://localhost:5173` and proxies API requests to `http://localhost:8125`.
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+Build output goes to `goli/web/` directory, which is served by the Go backend.
+
+## Project Structure
 
 ```
-goli/
-├── web/                    # Static files served by Go server
-│   ├── index.html          # Current simple UI (temporary)
-│   └── example-pipeline.yaml
-│
-frontend/                   # Future Vue.js application (to be created)
+frontend/
 ├── src/
+│   ├── api/
+│   │   └── client.js          # API client & WebSocket
 │   ├── components/
-│   ├── views/
-│   ├── router/
-│   ├── store/
-│   └── main.js
-├── public/
+│   │   ├── Dashboard.vue      # Main dashboard
+│   │   ├── Jobs.vue           # Jobs list
+│   │   ├── Pipelines.vue      # Pipelines list
+│   │   ├── Settings.vue       # User & system settings
+│   │   ├── Login.vue          # Authentication
+│   │   ├── SetupWizard.vue    # Initial setup
+│   │   ├── LogsView.vue       # Logs viewer
+│   │   ├── Modal.vue          # Reusable modal
+│   │   ├── TextInput.vue      # Form input component
+│   │   ├── FormField.vue      # Form field wrapper
+│   │   ├── Alert.vue          # Alert component
+│   │   ├── StatusBadge.vue    # Status badge
+│   │   └── ToggleSwitch.vue   # Toggle switch
+│   ├── App.vue                # Main app component
+│   ├── main.js                # Entry point
+│   └── style.css              # Tailwind imports
 ├── package.json
-├── vite.config.js
-└── tailwind.config.js
+└── vite.config.js
 ```
 
-### Build Process
+## UI Components
 
-1. **Development**: Run ViteJS dev server for hot-reload development
-2. **Production**: Build with `npm run build` which outputs to `frontend/dist/`
-3. **Deployment**: Copy `frontend/dist/*` contents to `goli/web/` directory
+### Reusable Components
 
-### Integration Steps
+- **Modal**: Reusable modal dialog with animations
+- **TextInput**: Styled input with error handling
+- **FormField**: Form field wrapper with labels
+- **Alert**: Success/error/warning alerts
+- **StatusBadge**: Status indicators for jobs/steps
+- **ToggleSwitch**: Toggle switch for settings
 
-When ready to integrate the Vue.js UI:
+### Pages
 
-1. Create the Vue.js project in a `frontend/` directory
-2. Configure ViteJS to output to `goli/web/` or copy build output
-3. Update `goli/main.go` to serve static files from `./web/` (already configured)
-4. Ensure API endpoints remain at `/api/v1/*` (already configured)
-5. WebSocket endpoint is at `/ws` (already configured)
+- **Dashboard**: Overview with stats and recent jobs
+- **Jobs**: Job list with filtering and actions
+- **Pipelines**: Pipeline management and execution
+- **Settings**: User profile, 2FA, and system config
+- **Login**: Authentication with 2FA support
 
-### API Endpoints
+## API Integration
 
-All API endpoints are prefixed with `/api/v1/`:
+All API calls are handled through `src/api/client.js`:
 
-- `GET /api/v1/jobs` - List jobs
-- `POST /api/v1/jobs` - Create job
-- `GET /api/v1/jobs/{id}` - Get job details
-- `GET /api/v1/pipelines` - List pipelines
-- `POST /api/v1/pipelines` - Create pipeline (JSON)
-- `POST /api/v1/pipelines/upload` - Upload pipeline (YAML file)
-- `GET /api/v1/pipelines/{id}` - Get pipeline details
-- `POST /api/v1/pipelines/{id}/run` - Run pipeline
+```javascript
+import { getJobs, createJob, getPipelines } from './api/client'
+```
 
 ### WebSocket
 
-- Endpoint: `ws://localhost:8125/ws` (or `wss://` for HTTPS)
-- Message types:
-  - `job_update` - Job status changed
-  - `stats_update` - Statistics updated
+Real-time updates via WebSocket:
 
-### Current Features
+```javascript
+const ws = new WebSocket('ws://localhost:8125/ws')
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data)
+  // Handle updates
+}
+```
 
-✅ Job management (create, list, view)
-✅ Pipeline upload via YAML file
-✅ Pipeline execution
-✅ Real-time updates via WebSocket
-✅ Dashboard with statistics
+## Styling
 
-### Future Enhancements
+Uses Tailwind CSS with custom theme:
 
-- Full Vue.js SPA with routing
-- Pipeline editor (visual + YAML)
-- Job logs viewer
-- Pipeline history and rollback
-- User authentication UI
-- Settings and configuration UI
+- Primary colors: Blue scale
+- Components: Cards, buttons, forms
+- Responsive: Mobile-first design
+- Dark terminal: Logs viewer with dark theme
 
+## Deployment
+
+1. Build the frontend: `npm run build`
+2. Output is automatically copied to `goli/web/`
+3. Go backend serves static files from `./web/`
+4. SPA routing handled by backend
+
+## Features in Detail
+
+### Dashboard
+- Real-time job statistics
+- Recent jobs overview
+- Quick actions
+
+### Jobs Management
+- List all jobs with status
+- View job details
+- Step-by-step logs
+- Cancel running jobs
+
+### Pipeline Management
+- Upload YAML pipelines
+- View pipeline definitions
+- Run pipelines
+- Monitor execution
+
+### Settings
+- User profile management
+- 2FA configuration (Email/SMS)
+- System configuration
+- SMTP settings
+
+## Development Tips
+
+- Hot module replacement (HMR) enabled
+- API calls proxied automatically
+- WebSocket connections handled automatically
+- Check browser console for debugging
+
+## Browser Support
+
+- Chrome/Edge (latest)
+- Firefox (latest)
+- Safari (latest)

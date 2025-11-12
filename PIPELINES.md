@@ -1,0 +1,331 @@
+# Pipeline Guide
+
+Complete guide to creating and managing pipelines in Goli.
+
+## Pipeline Structure
+
+Pipelines are defined in YAML format with the following structure:
+
+```yaml
+name: "Pipeline Name"
+description: "Optional description"
+steps:
+  - name: "Step Name"
+    type: "docker" | "shell" | "script"
+    action: "action-name"
+    config:
+      # Step-specific configuration
+    retry: 1                    # Optional: retry attempts (default: 1)
+    on_failure: "stop"         # Optional: "stop" or "continue" (default: "stop")
+```
+
+## Step Types
+
+### Docker Steps
+
+Execute Docker operations.
+
+**Actions:**
+- `pull`: Pull a Docker image
+- `run`: Run a new container
+- `start`: Start an existing container
+- `stop`: Stop a running container
+- `rm`: Remove a container
+
+**Pull Image:**
+```yaml
+- name: "Pull Latest Image"
+  type: "docker"
+  action: "pull"
+  config:
+    image: "myapp:latest"
+```
+
+**Run Container:**
+```yaml
+- name: "Run Application"
+  type: "docker"
+  action: "run"
+  config:
+    container: "myapp-container"
+    image: "myapp:latest"
+    ports: ["8080:80", "443:443"]
+    env:
+      NODE_ENV: "production"
+      DATABASE_URL: "postgres://..."
+    volumes: ["/host/path:/container/path"]
+    cmd: ["npm", "start"]          # Optional: command to run
+    network: "my-network"          # Optional: network name
+```
+
+**Container Operations:**
+```yaml
+- name: "Stop Container"
+  type: "docker"
+  action: "stop"
+  config:
+    container: "myapp-container"
+  on_failure: "continue"           # Continue even if container doesn't exist
+```
+
+### Shell Steps
+
+Execute shell commands.
+
+```yaml
+- name: "Run Tests"
+  type: "shell"
+  action: "run"
+  config:
+    command: "npm"
+    args: ["test"]
+```
+
+**Example:**
+```yaml
+- name: "Build Application"
+  type: "shell"
+  action: "run"
+  config:
+    command: "make"
+    args: ["build"]
+  retry: 2
+```
+
+### Script Steps
+
+Execute custom scripts.
+
+```yaml
+- name: "Custom Deployment"
+  type: "script"
+  action: "run"
+  config:
+    script: |
+      #!/bin/bash
+      echo "Deploying..."
+      ./deploy.sh
+      echo "Deployment complete"
+    shell: "bash"                  # Optional: shell to use (default: "sh")
+```
+
+## Step Options
+
+### Retry
+
+Number of retry attempts if step fails:
+
+```yaml
+- name: "Unreliable Step"
+  type: "shell"
+  action: "run"
+  config:
+    command: "curl"
+    args: ["-f", "http://example.com"]
+  retry: 3                         # Will retry up to 3 times
+```
+
+### On Failure
+
+Control pipeline behavior when a step fails:
+
+```yaml
+- name: "Optional Step"
+  type: "docker"
+  action: "stop"
+  config:
+    container: "old-container"
+  on_failure: "continue"           # Continue to next step even if this fails
+```
+
+Options:
+- `stop`: Stop pipeline execution (default)
+- `continue`: Continue to next step
+
+## Complete Examples
+
+### Example 1: Deploy Node.js Application
+
+```yaml
+name: "Deploy Node.js App"
+description: "Deploy a Node.js application using Docker"
+steps:
+  - name: "Pull Latest Image"
+    type: "docker"
+    action: "pull"
+    config:
+      image: "myapp:latest"
+    retry: 2
+
+  - name: "Stop Old Container"
+    type: "docker"
+    action: "stop"
+    config:
+      container: "myapp"
+    on_failure: "continue"
+
+  - name: "Remove Old Container"
+    type: "docker"
+    action: "rm"
+    config:
+      container: "myapp"
+    on_failure: "continue"
+
+  - name: "Run New Container"
+    type: "docker"
+    action: "run"
+    config:
+      container: "myapp"
+      image: "myapp:latest"
+      ports: ["3000:3000"]
+      env:
+        NODE_ENV: "production"
+        PORT: "3000"
+      volumes: ["/app/data:/data"]
+    retry: 1
+
+  - name: "Health Check"
+    type: "shell"
+    action: "run"
+    config:
+      command: "curl"
+      args: ["-f", "http://localhost:3000/health"]
+    retry: 3
+```
+
+### Example 2: Database Migration
+
+```yaml
+name: "Database Migration"
+steps:
+  - name: "Run Migrations"
+    type: "script"
+    action: "run"
+    config:
+      script: |
+        cd /app
+        export DATABASE_URL="postgres://user:pass@localhost/db"
+        npm run migrate
+      shell: "bash"
+    retry: 2
+    on_failure: "stop"
+```
+
+### Example 3: Multi-Service Deployment
+
+```yaml
+name: "Full Stack Deployment"
+steps:
+  - name: "Pull Backend Image"
+    type: "docker"
+    action: "pull"
+    config:
+      image: "backend:latest"
+
+  - name: "Pull Frontend Image"
+    type: "docker"
+    action: "pull"
+    config:
+      image: "frontend:latest"
+
+  - name: "Deploy Backend"
+    type: "docker"
+    action: "run"
+    config:
+      container: "backend"
+      image: "backend:latest"
+      ports: ["8000:8000"]
+      env:
+        DATABASE_URL: "postgres://..."
+      network: "app-network"
+
+  - name: "Deploy Frontend"
+    type: "docker"
+    action: "run"
+    config:
+      container: "frontend"
+      image: "frontend:latest"
+      ports: ["80:80"]
+      network: "app-network"
+```
+
+## Creating Pipelines
+
+### Via UI
+
+1. Navigate to **Pipelines** tab
+2. Click **+ Upload Pipeline**
+3. Select your YAML file
+4. Optionally provide name and description
+5. Click **Upload & Create**
+
+### Via API
+
+**Upload YAML File:**
+```bash
+curl -X POST \
+  -H "Authorization: Bearer <token>" \
+  -F "yaml_file=@pipeline.yaml" \
+  -F "name=My Pipeline" \
+  http://your-server:8125/api/v1/pipelines/upload
+```
+
+**Create from JSON:**
+```bash
+curl -X POST \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Pipeline",
+    "definition": "yaml_content_here"
+  }' \
+  http://your-server:8125/api/v1/pipelines
+```
+
+## Running Pipelines
+
+### Via UI
+
+1. Go to **Pipelines** tab
+2. Click **Run** next to the pipeline
+3. Monitor execution in **Jobs** tab
+
+### Via API
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Deployment Run",
+    "triggered_by": "Manual"
+  }' \
+  http://your-server:8125/api/v1/pipelines/1/run
+```
+
+## Best Practices
+
+1. **Use descriptive names**: Clear step names help with debugging
+2. **Handle failures gracefully**: Use `on_failure: "continue"` for optional steps
+3. **Add retries**: For network operations, add retry logic
+4. **Health checks**: Always verify deployment success
+5. **Environment variables**: Use env vars for sensitive data
+6. **Idempotency**: Design steps to be safely re-runnable
+
+## Troubleshooting
+
+**Pipeline fails immediately?**
+- Check YAML syntax
+- Verify all required config fields are present
+- Check Docker is running
+
+**Step keeps failing?**
+- Review step logs in the UI
+- Verify Docker permissions
+- Check network connectivity
+- Review environment variables
+
+**Container already exists?**
+- Add stop/rm steps before run
+- Use `on_failure: "continue"` for cleanup steps
+
