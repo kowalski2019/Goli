@@ -2,8 +2,8 @@
 
 curr_dir=`pwd`
 goli_work_dir="/usr/local/sbin/goli"
-go_download_link="https://go.dev/dl/go1.20.3.linux-amd64.tar.gz"
-go_installer="go1.20.3.linux-amd64.tar.gz"
+go_download_link="https://go.dev/dl/go1.24.9.linux-amd64.tar.gz"
+go_installer="go1.24.9.linux-amd64.tar.gz"
 
 source_func() {
     source "/etc/profile"
@@ -23,6 +23,15 @@ create_goli_user() {
         useradd -r -s /usr/sbin/nologin -d /goli -c "Goli service user" goli
         if [ $? -eq 0 ]; then
             echo "User 'goli' created successfully"
+
+            echo "Adding user 'goli' to docker group ..."
+            usermod -aG docker goli
+            if [ $? -eq 0 ]; then
+                echo "User 'goli' added to docker group successfully"
+            else
+                echo "Failed to add user 'goli' to docker group"
+                exit_func
+            fi
         else
             echo "Failed to create user 'goli'"
             exit_func
@@ -63,7 +72,14 @@ install_go(){
 
 compile_and_install_binaries() {
     ## Compile and Install go binary
-    cd "${curr_dir}/goli" && /usr/local/go/bin/go get && /usr/local/go/bin/go build -o "${goli_work_dir}/goli" main.go && cd -
+    _go=`which go`
+    cd "${curr_dir}/goli" && $_go mod tidy && $_go build -o "${goli_work_dir}/goli" main.go && cd -
+    if [ $? -eq 0 ]; then
+        echo "Goli binary installed successfully"
+    else
+        echo "Failed to install Goli binary"
+        exit_func
+    fi
 }
 
 install() {
