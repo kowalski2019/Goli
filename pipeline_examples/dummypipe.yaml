@@ -22,6 +22,7 @@ steps:
     type: "script"
     action: "run"
     config:
+      shell: "bash"
       script: |
         echo "Test Shell Step 3"
         pushd /tmp
