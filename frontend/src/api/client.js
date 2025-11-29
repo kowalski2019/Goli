@@ -284,6 +284,18 @@ export async function getPipeline(id) {
   return response.json()
 }
 
+export async function deletePipeline(id) {
+  const response = await fetch(`${API_BASE}/pipelines/${id}`, {
+    method: 'DELETE',
+    headers: getBearerAuthHeaders()
+  })
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to delete pipeline' }))
+    throw new Error(error.error || error.message || 'Failed to delete pipeline')
+  }
+  return response.json()
+}
+
 export async function uploadPipeline(formData, useAuthKey = false) {
   const headers = getFormHeaders(useAuthKey)
   const response = await fetch(`${API_BASE}/pipelines/upload`, {

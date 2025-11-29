@@ -148,8 +148,59 @@
         </div>
       </div>
 
+      <!-- Restart Required Alert -->
+      <div
+        v-if="restartRequired"
+        ref="restartAlertRef"
+        class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-5 rounded-r-lg"
+      >
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <div class="flex items-center mb-2">
+              <svg class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h4 class="text-sm font-semibold text-blue-800">Restart Required</h4>
+            </div>
+            <p class="text-sm text-blue-700 mb-3">
+              Changes to host or port will only take effect after restarting the application.
+            </p>
+            <div class="flex items-center gap-2 bg-white rounded px-3 py-2 border border-blue-200">
+              <code class="text-sm text-gray-800 font-mono flex-1">sudo systemctl restart goli</code>
+              <button
+                @click="copyRestartCommand"
+                class="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors"
+                title="Click to copy"
+              >
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copy
+              </button>
+            </div>
+          </div>
+          <button
+            @click="dismissRestartAlert"
+            class="ml-4 text-blue-500 hover:text-blue-700"
+            title="Dismiss"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
       <div class="space-y-5">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <FormField label="Host" required description="Server host address">
+            <TextInput
+              v-model="config.host"
+              type="text"
+              placeholder="127.0.0.1"
+            />
+          </FormField>
+
           <FormField label="Port" required description="Server port number">
             <TextInput
               :model-value="config.port"
@@ -158,7 +209,9 @@
               @update:model-value="config.port = parseInt($event) || 8125"
             />
           </FormField>
+        </div>
 
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
           <FormField label="GitHub Username">
             <TextInput
               v-model="config.gh_username"
@@ -308,6 +361,7 @@ const twoFA = ref({
   sms: false
 })
 const config = ref({
+  host: '127.0.0.1',
   port: 8125,
   gh_username: '',
   gh_access_token: '',
@@ -322,6 +376,11 @@ const saving = ref(false)
 const savingConfig = ref(false)
 const error = ref('')
 const success = ref('')
+const restartRequired = ref(false)
+const restartAlertTimeout = ref(null)
+const restartAlertRef = ref(null)
+const previousHost = ref('')
+const previousPort = ref(8125)
 
 async function loadUserData() {
   try {
@@ -343,6 +402,7 @@ async function loadUserData() {
 async function loadConfig() {
   try {
     const configData = await getConfig()
+    config.value.host = configData.host || '127.0.0.1'
     config.value.port = parseInt(configData.port) || 8125
     config.value.gh_username = configData.gh_username || ''
     config.value.gh_access_token = configData.gh_access_token || ''
@@ -352,6 +412,10 @@ async function loadConfig() {
     config.value.smtp_pass = configData.smtp_pass || ''
     config.value.smtp_from = configData.smtp_from || ''
     config.value.smtp_from_name = configData.smtp_from_name || ''
+    
+    // Store previous values for comparison
+    previousHost.value = config.value.host
+    previousPort.value = config.value.port
   } catch (error) {
     console.error('Error loading config:', error)
   }
@@ -402,8 +466,13 @@ async function updateConfig() {
   error.value = ''
   success.value = ''
   
+  // Check if host or port changed before update
+  const hostChanged = (config.value.host || '127.0.0.1') !== previousHost.value
+  const portChanged = config.value.port !== previousPort.value
+  
   try {
     const updateData = {
+      host: config.value.host || '127.0.0.1',
       port: config.value.port.toString(),
       gh_username: config.value.gh_username,
       gh_access_token: config.value.gh_access_token,
@@ -418,10 +487,112 @@ async function updateConfig() {
     await updateConfigAPI(updateData)
     success.value = 'Configuration updated successfully'
     await loadConfig()
+    
+    // Show restart alert if host or port changed
+    if (hostChanged || portChanged) {
+      showRestartAlert()
+    }
   } catch (err) {
     error.value = err.message || 'Failed to update configuration'
   } finally {
     savingConfig.value = false
+  }
+}
+
+function showRestartAlert() {
+  restartRequired.value = true
+  
+  // Clear any existing timeout
+  if (restartAlertTimeout.value) {
+    clearTimeout(restartAlertTimeout.value)
+  }
+  
+  // Scroll to alert smoothly after a brief delay to ensure it's rendered
+  setTimeout(() => {
+    if (restartAlertRef.value) {
+      restartAlertRef.value.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start',
+        inline: 'nearest'
+      })
+    }
+  }, 100)
+  
+  // Auto-dismiss after 2 minutes (120000ms)
+  restartAlertTimeout.value = setTimeout(() => {
+    restartRequired.value = false
+  }, 120000)
+}
+
+function dismissRestartAlert() {
+  restartRequired.value = false
+  if (restartAlertTimeout.value) {
+    clearTimeout(restartAlertTimeout.value)
+    restartAlertTimeout.value = null
+  }
+}
+
+async function copyRestartCommand(event) {
+  const command = 'sudo systemctl restart goli'
+  const copyBtn = event?.target?.closest('button')
+  let copied = false
+  
+  // Try modern Clipboard API first (if available)
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(command)
+      copied = true
+    } catch (err) {
+      console.warn('Clipboard API failed, trying fallback:', err)
+    }
+  }
+  
+  // Fallback method for browsers without Clipboard API or if it failed
+  if (!copied) {
+    try {
+      const textArea = document.createElement('textarea')
+      textArea.value = command
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-999999px'
+      textArea.style.top = '-999999px'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      
+      // Try execCommand (deprecated but widely supported)
+      const successful = document.execCommand('copy')
+      document.body.removeChild(textArea)
+      
+      if (successful) {
+        copied = true
+      } else {
+        throw new Error('execCommand failed')
+      }
+    } catch (err) {
+      console.error('All copy methods failed:', err)
+      // Show error feedback
+      if (copyBtn) {
+        const originalText = copyBtn.innerHTML
+        copyBtn.innerHTML = '<svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>Failed'
+        copyBtn.classList.add('text-red-600')
+        setTimeout(() => {
+          copyBtn.innerHTML = originalText
+          copyBtn.classList.remove('text-red-600')
+        }, 2000)
+      }
+      return
+    }
+  }
+  
+  // Show success feedback
+  if (copyBtn && copied) {
+    const originalText = copyBtn.innerHTML
+    copyBtn.innerHTML = '<svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>Copied!'
+    copyBtn.classList.add('text-green-600')
+    setTimeout(() => {
+      copyBtn.innerHTML = originalText
+      copyBtn.classList.remove('text-green-600')
+    }, 2000)
   }
 }
 
