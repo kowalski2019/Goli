@@ -15,6 +15,7 @@ func GetConfigHandler(c *gin.Context) {
 	setupComplete := config["setup_complete"] == "true"
 
 	response_util.SendJsonResponseGin(c, 200, gin.H{
+		"host":            config["host"],
 		"port":            config["port"],
 		"auth_key":        config["auth_key"],
 		"setup_complete":  setupComplete,
@@ -32,6 +33,7 @@ func GetConfigHandler(c *gin.Context) {
 // UpdateConfigHandler updates the configuration
 func UpdateConfigHandler(c *gin.Context) {
 	var body struct {
+		Host          string `json:"host,omitempty"`
 		Port          string `json:"port,omitempty"`
 		AuthKey       string `json:"auth_key,omitempty"`
 		SetupComplete *bool  `json:"setup_complete,omitempty"`
@@ -51,6 +53,10 @@ func UpdateConfigHandler(c *gin.Context) {
 	}
 
 	updates := make(map[string]string)
+
+	if body.Host != "" {
+		updates["host"] = body.Host
+	}
 
 	if body.Port != "" {
 		updates["port"] = body.Port
@@ -112,11 +118,25 @@ func UpdateConfigHandler(c *gin.Context) {
 		return
 	}
 
+	// If GitHub credentials were updated, automatically authenticate with GitHub Container Registry
+	if body.GHUsername != "" || body.GHAccessToken != "" {
+		if err := response_util.AuthenticateGitHubContainerRegistry(); err != nil {
+			// Log the error but don't fail the config update
+			// The user can manually authenticate later if needed
+			response_util.SendJsonResponseGin(c, 200, gin.H{
+				"message": "Config updated successfully, but GitHub Container Registry authentication failed. You may need to authenticate manually.",
+				"warning": err.Error(),
+			})
+			return
+		}
+	}
+
 	// Return updated config
 	config := aux.GetAllConfig()
 	setupComplete := config["setup_complete"] == "true"
 
 	response_util.SendJsonResponseGin(c, 200, gin.H{
+		"host":            config["host"],
 		"port":            config["port"],
 		"auth_key":        config["auth_key"],
 		"setup_complete":  setupComplete,

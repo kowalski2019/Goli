@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"goli/database"
 	"goli/models"
+	response_util "goli/utils"
 	"log"
 	"os/exec"
 	"strings"
@@ -166,6 +167,72 @@ func executeDockerStep(step *models.JobStep, stepDef models.PipelineStep, job *m
 			return ErrInvalidConfig
 		}
 		return executeDockerStop(container, step)
+	case "rm":
+		container, ok := config["container"].(string)
+		if !ok {
+			logToStep(step.ID, "ERROR: Missing or invalid 'container' configuration")
+			return ErrInvalidConfig
+		}
+		return executeDockerRemove(container, step)
+
+	case "rmi":
+		image, ok := config["image"].(string)
+		if !ok {
+			logToStep(step.ID, "ERROR: Missing or invalid 'image' configuration")
+			return ErrInvalidConfig
+		}
+		return executeDockerRemoveImage(image, step)
+	case "pause":
+		container, ok := config["container"].(string)
+		if !ok {
+			logToStep(step.ID, "ERROR: Missing or invalid 'container' configuration")
+			return ErrInvalidConfig
+		}
+		return executeDockerPause(container, step)
+	case "unpause":
+		container, ok := config["container"].(string)
+		if !ok {
+			logToStep(step.ID, "ERROR: Missing or invalid 'container' configuration")
+			return ErrInvalidConfig
+		}
+		return executeDockerUnpause(container, step)
+	case "inspect":
+		container, ok := config["container"].(string)
+		if !ok {
+			logToStep(step.ID, "ERROR: Missing or invalid 'container' configuration")
+			return ErrInvalidConfig
+		}
+		return executeDockerInspect(container, step)
+	case "logs":
+		container, ok := config["container"].(string)
+		if !ok {
+			logToStep(step.ID, "ERROR: Missing or invalid 'container' configuration")
+			return ErrInvalidConfig
+		}
+		return executeDockerLogs(container, step)
+	case "exec":
+		container, ok := config["container"].(string)
+		if !ok {
+			logToStep(step.ID, "ERROR: Missing or invalid 'container' configuration")
+			return ErrInvalidConfig
+		}
+		command, ok := config["command"].(string)
+		if !ok {
+			logToStep(step.ID, "ERROR: Missing or invalid 'command' configuration")
+			return ErrInvalidConfig
+		}
+		args, ok := config["args"].([]interface{})
+		if !ok {
+			logToStep(step.ID, "ERROR: Missing or invalid 'args' configuration")
+			return ErrInvalidConfig
+		}
+		argsString := []string{}
+		for _, arg := range args {
+			if argStr, ok := arg.(string); ok {
+				argsString = append(argsString, argStr)
+			}
+		}
+		return executeDockerExec(container, command, argsString, step)
 	default:
 		logToStep(step.ID, fmt.Sprintf("ERROR: Unsupported Docker action: %s", action))
 		return ErrUnsupportedAction
@@ -262,6 +329,9 @@ func executeShellStep(step *models.JobStep, stepDef models.PipelineStep, job *mo
 // Helper functions for Docker operations
 func executeDockerPull(image string, step *models.JobStep) error {
 	logToStep(step.ID, fmt.Sprintf("Pulling Docker image: %s", image))
+
+	// Ensure GitHub Container Registry authentication if needed
+	response_util.EnsureGitHubAuthForImage(image)
 
 	cmd := exec.Command("docker", "pull", image)
 	output, err := cmd.CombinedOutput()
@@ -397,7 +467,125 @@ func executeDockerStop(container string, step *models.JobStep) error {
 	return nil
 }
 
-// executeShellCommand executes a shell command and returns its output
+func executeDockerRemove(container string, step *models.JobStep) error {
+	logToStep(step.ID, fmt.Sprintf("Removing Docker container: %s", container))
+
+	cmd := exec.Command("docker", "rm", "-f", container)
+	output, err := cmd.CombinedOutput()
+	if len(output) > 0 {
+		logToStep(step.ID, fmt.Sprintf("Docker remove output:\n%s", string(output)))
+	}
+	if err != nil {
+		logToStep(step.ID, fmt.Sprintf("Docker remove failed: %v", err))
+		return fmt.Errorf("docker remove failed: %w", err)
+	}
+
+	logToStep(step.ID, "Docker container removed successfully")
+	return nil
+}
+
+func executeDockerRemoveImage(image string, step *models.JobStep) error {
+	logToStep(step.ID, fmt.Sprintf("Removing Docker image: %s", image))
+
+	cmd := exec.Command("docker", "rmi", "-f", image)
+	output, err := cmd.CombinedOutput()
+	if len(output) > 0 {
+		logToStep(step.ID, fmt.Sprintf("Docker remove image output:\n%s", string(output)))
+	}
+	if err != nil {
+		logToStep(step.ID, fmt.Sprintf("Docker remove image failed: %v", err))
+		return fmt.Errorf("docker remove image failed: %w", err)
+	}
+
+	logToStep(step.ID, "Docker image removed successfully")
+	return nil
+}
+
+func executeDockerPause(container string, step *models.JobStep) error {
+	logToStep(step.ID, fmt.Sprintf("Pausing Docker container: %s", container))
+
+	cmd := exec.Command("docker", "pause", container)
+	output, err := cmd.CombinedOutput()
+	if len(output) > 0 {
+		logToStep(step.ID, fmt.Sprintf("Docker pause output:\n%s", string(output)))
+	}
+	if err != nil {
+		logToStep(step.ID, fmt.Sprintf("Docker pause failed: %v", err))
+		return fmt.Errorf("docker pause failed: %w", err)
+	}
+
+	logToStep(step.ID, "Docker container paused successfully")
+	return nil
+}
+
+func executeDockerUnpause(container string, step *models.JobStep) error {
+	logToStep(step.ID, fmt.Sprintf("Unpausing Docker container: %s", container))
+
+	cmd := exec.Command("docker", "unpause", container)
+	output, err := cmd.CombinedOutput()
+	if len(output) > 0 {
+		logToStep(step.ID, fmt.Sprintf("Docker unpause output:\n%s", string(output)))
+	}
+	if err != nil {
+		logToStep(step.ID, fmt.Sprintf("Docker unpause failed: %v", err))
+		return fmt.Errorf("docker unpause failed: %w", err)
+	}
+
+	logToStep(step.ID, "Docker container unpaused successfully")
+	return nil
+}
+
+func executeDockerInspect(container string, step *models.JobStep) error {
+	logToStep(step.ID, fmt.Sprintf("Inspecting Docker container: %s", container))
+
+	cmd := exec.Command("docker", "inspect", container)
+	output, err := cmd.CombinedOutput()
+	if len(output) > 0 {
+		logToStep(step.ID, fmt.Sprintf("Docker inspect output:\n%s", string(output)))
+	}
+	if err != nil {
+		logToStep(step.ID, fmt.Sprintf("Docker inspect failed: %v", err))
+		return fmt.Errorf("docker inspect failed: %w", err)
+	}
+
+	logToStep(step.ID, "Docker container inspected successfully")
+	return nil
+}
+
+func executeDockerLogs(container string, step *models.JobStep) error {
+	logToStep(step.ID, fmt.Sprintf("Getting Docker container logs: %s", container))
+
+	cmd := exec.Command("docker", "logs", container)
+	output, err := cmd.CombinedOutput()
+	if len(output) > 0 {
+		logToStep(step.ID, fmt.Sprintf("Docker logs output:\n%s", string(output)))
+	}
+	if err != nil {
+		logToStep(step.ID, fmt.Sprintf("Docker logs failed: %v", err))
+		return fmt.Errorf("docker logs failed: %w", err)
+	}
+
+	logToStep(step.ID, "Docker container logs retrieved successfully")
+	return nil
+}
+
+func executeDockerExec(container string, command string, args []string, step *models.JobStep) error {
+	logToStep(step.ID, fmt.Sprintf("Executing command in Docker container: %s", container))
+
+	cmd := exec.Command("docker", "exec", container, command)
+	output, err := cmd.CombinedOutput()
+	if len(output) > 0 {
+		logToStep(step.ID, fmt.Sprintf("Docker exec output:\n%s", string(output)))
+	}
+	if err != nil {
+		logToStep(step.ID, fmt.Sprintf("Docker exec failed: %v", err))
+		return fmt.Errorf("docker exec failed: %w", err)
+	}
+
+	logToStep(step.ID, "Docker container exec executed successfully")
+	return nil
+}
+
 func executeShellCommand(command string, args ...string) (string, error) {
 	cmd := exec.Command(command, args...)
 	output, err := cmd.CombinedOutput()

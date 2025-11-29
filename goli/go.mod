@@ -1,8 +1,8 @@
 module goli
 
-go 1.23
+go 1.24.0
 
-toolchain go1.23.0
+toolchain go1.24.3
 
 require (
 	github.com/gin-gonic/gin v1.10.0

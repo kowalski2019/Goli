@@ -84,6 +84,7 @@ func GetAllConfig() map[string]string {
 	result := make(map[string]string)
 
 	// Get known config fields
+	result["host"] = config.GetString("constants.host")
 	result["port"] = config.GetString("constants.port")
 	result["auth_key"] = config.GetString("constants.auth_key")
 	result["setup_complete"] = getSetupCompleteString()
@@ -100,9 +101,49 @@ func GetAllConfig() map[string]string {
 	return result
 }
 
-// UpdateConfig updates the config file with new values
+// getCurrentConfigValue extracts the current value of a config key from a line
+func getCurrentConfigValue(line string) string {
+	parts := strings.SplitN(strings.TrimSpace(line), "=", 2)
+	if len(parts) != 2 {
+		return ""
+	}
+	value := strings.TrimSpace(parts[1])
+	// Remove quotes if present
+	value = strings.Trim(value, `"`)
+	value = strings.Trim(value, `'`)
+	return value
+}
+
+// shouldUpdateField checks if a field should be updated (only if value is different)
+func shouldUpdateField(currentValue, newValue string) bool {
+	if newValue == "" {
+		return false // Don't update if new value is empty
+	}
+	currentValue = strings.TrimSpace(currentValue)
+	newValue = strings.TrimSpace(newValue)
+	return currentValue != newValue
+}
+
+// UpdateConfig updates the config file with new values, only updating fields that have changed
 func UpdateConfig(updates map[string]string) error {
 	config_path := GetConfigPath()
+
+	// Get current config to compare values
+	currentConfig := GetAllConfig()
+
+	// Filter updates to only include fields that actually changed
+	filteredUpdates := make(map[string]string)
+	for key, newValue := range updates {
+		currentValue := currentConfig[key]
+		if shouldUpdateField(currentValue, newValue) {
+			filteredUpdates[key] = newValue
+		}
+	}
+
+	// If no actual changes, return early
+	if len(filteredUpdates) == 0 {
+		return nil
+	}
 
 	// Read existing config file
 	content, err := os.ReadFile(config_path)
@@ -113,6 +154,7 @@ func UpdateConfig(updates map[string]string) error {
 	lines := strings.Split(string(content), "\n")
 	var updatedLines []string
 	inConstantsSection := false
+	hostUpdated := false
 	portUpdated := false
 	authKeyUpdated := false
 	setupCompleteUpdated := false
@@ -139,52 +181,56 @@ func UpdateConfig(updates map[string]string) error {
 		// Check if we're leaving the constants section (new section starts)
 		if inConstantsSection && strings.HasPrefix(trimmed, "[") && trimmed != "[constants]" {
 			// Add any missing fields before leaving constants section
-			if !portUpdated && updates["port"] != "" {
-				updatedLines = append(updatedLines, `port = "`+updates["port"]+`"`)
+			if !hostUpdated && filteredUpdates["host"] != "" {
+				updatedLines = append(updatedLines, `host = "`+filteredUpdates["host"]+`"`)
+				hostUpdated = true
+			}
+			if !portUpdated && filteredUpdates["port"] != "" {
+				updatedLines = append(updatedLines, `port = "`+filteredUpdates["port"]+`"`)
 				portUpdated = true
 			}
-			if !authKeyUpdated && updates["auth_key"] != "" {
-				updatedLines = append(updatedLines, `auth_key = "`+updates["auth_key"]+`"`)
+			if !authKeyUpdated && filteredUpdates["auth_key"] != "" {
+				updatedLines = append(updatedLines, `auth_key = "`+filteredUpdates["auth_key"]+`"`)
 				authKeyUpdated = true
 			}
-			if !setupCompleteUpdated && updates["setup_complete"] != "" {
-				updatedLines = append(updatedLines, `setup_complete = `+updates["setup_complete"])
+			if !setupCompleteUpdated && filteredUpdates["setup_complete"] != "" {
+				updatedLines = append(updatedLines, `setup_complete = `+filteredUpdates["setup_complete"])
 				setupCompleteUpdated = true
 			}
-			if !setupPasswordUpdated && updates["setup_password"] != "" {
-				updatedLines = append(updatedLines, `setup_password = "`+updates["setup_password"]+`"`)
+			if !setupPasswordUpdated && filteredUpdates["setup_password"] != "" {
+				updatedLines = append(updatedLines, `setup_password = "`+filteredUpdates["setup_password"]+`"`)
 				setupPasswordUpdated = true
 			}
-			if !ghUsernameUpdated && updates["gh_username"] != "" {
-				updatedLines = append(updatedLines, `gh_username = "`+updates["gh_username"]+`"`)
+			if !ghUsernameUpdated && filteredUpdates["gh_username"] != "" {
+				updatedLines = append(updatedLines, `gh_username = "`+filteredUpdates["gh_username"]+`"`)
 				ghUsernameUpdated = true
 			}
-			if !ghAccessTokenUpdated && updates["gh_access_token"] != "" {
-				updatedLines = append(updatedLines, `gh_access_token = "`+updates["gh_access_token"]+`"`)
+			if !ghAccessTokenUpdated && filteredUpdates["gh_access_token"] != "" {
+				updatedLines = append(updatedLines, `gh_access_token = "`+filteredUpdates["gh_access_token"]+`"`)
 				ghAccessTokenUpdated = true
 			}
-			if !smtpHostUpdated && updates["smtp_host"] != "" {
-				updatedLines = append(updatedLines, `smtp_host = "`+updates["smtp_host"]+`"`)
+			if !smtpHostUpdated && filteredUpdates["smtp_host"] != "" {
+				updatedLines = append(updatedLines, `smtp_host = "`+filteredUpdates["smtp_host"]+`"`)
 				smtpHostUpdated = true
 			}
-			if !smtpPortUpdated && updates["smtp_port"] != "" {
-				updatedLines = append(updatedLines, `smtp_port = "`+updates["smtp_port"]+`"`)
+			if !smtpPortUpdated && filteredUpdates["smtp_port"] != "" {
+				updatedLines = append(updatedLines, `smtp_port = "`+filteredUpdates["smtp_port"]+`"`)
 				smtpPortUpdated = true
 			}
-			if !smtpUserUpdated && updates["smtp_user"] != "" {
-				updatedLines = append(updatedLines, `smtp_user = "`+updates["smtp_user"]+`"`)
+			if !smtpUserUpdated && filteredUpdates["smtp_user"] != "" {
+				updatedLines = append(updatedLines, `smtp_user = "`+filteredUpdates["smtp_user"]+`"`)
 				smtpUserUpdated = true
 			}
-			if !smtpPassUpdated && updates["smtp_pass"] != "" {
-				updatedLines = append(updatedLines, `smtp_pass = "`+updates["smtp_pass"]+`"`)
+			if !smtpPassUpdated && filteredUpdates["smtp_pass"] != "" {
+				updatedLines = append(updatedLines, `smtp_pass = "`+filteredUpdates["smtp_pass"]+`"`)
 				smtpPassUpdated = true
 			}
-			if !smtpFromUpdated && updates["smtp_from"] != "" {
-				updatedLines = append(updatedLines, `smtp_from = "`+updates["smtp_from"]+`"`)
+			if !smtpFromUpdated && filteredUpdates["smtp_from"] != "" {
+				updatedLines = append(updatedLines, `smtp_from = "`+filteredUpdates["smtp_from"]+`"`)
 				smtpFromUpdated = true
 			}
-			if !smtpFromNameUpdated && updates["smtp_from_name"] != "" {
-				updatedLines = append(updatedLines, `smtp_from_name = "`+updates["smtp_from_name"]+`"`)
+			if !smtpFromNameUpdated && filteredUpdates["smtp_from_name"] != "" {
+				updatedLines = append(updatedLines, `smtp_from_name = "`+filteredUpdates["smtp_from_name"]+`"`)
 				smtpFromNameUpdated = true
 			}
 			inConstantsSection = false
@@ -192,66 +238,71 @@ func UpdateConfig(updates map[string]string) error {
 
 		// Update existing fields in constants section
 		if inConstantsSection {
-			if strings.HasPrefix(trimmed, "port") && updates["port"] != "" {
-				updatedLines = append(updatedLines, `port = "`+updates["port"]+`"`)
+			if strings.HasPrefix(trimmed, "host") && !strings.HasPrefix(trimmed, "hostname") && filteredUpdates["host"] != "" {
+				updatedLines = append(updatedLines, `host = "`+filteredUpdates["host"]+`"`)
+				hostUpdated = true
+				continue
+			}
+			if strings.HasPrefix(trimmed, "port") && filteredUpdates["port"] != "" {
+				updatedLines = append(updatedLines, `port = "`+filteredUpdates["port"]+`"`)
 				portUpdated = true
 				continue
 			}
-			if strings.HasPrefix(trimmed, "auth_key") && updates["auth_key"] != "" {
-				updatedLines = append(updatedLines, `auth_key = "`+updates["auth_key"]+`"`)
+			if strings.HasPrefix(trimmed, "auth_key") && filteredUpdates["auth_key"] != "" {
+				updatedLines = append(updatedLines, `auth_key = "`+filteredUpdates["auth_key"]+`"`)
 				authKeyUpdated = true
 				continue
 			}
-			if strings.HasPrefix(trimmed, "setup_complete") && updates["setup_complete"] != "" {
-				updatedLines = append(updatedLines, `setup_complete = `+updates["setup_complete"])
+			if strings.HasPrefix(trimmed, "setup_complete") && filteredUpdates["setup_complete"] != "" {
+				updatedLines = append(updatedLines, `setup_complete = `+filteredUpdates["setup_complete"])
 				setupCompleteUpdated = true
 				continue
 			}
 			if strings.HasPrefix(trimmed, "setup_password") {
-				if updates["setup_password"] != "" {
-					updatedLines = append(updatedLines, `setup_password = "`+updates["setup_password"]+`"`)
+				if filteredUpdates["setup_password"] != "" {
+					updatedLines = append(updatedLines, `setup_password = "`+filteredUpdates["setup_password"]+`"`)
 				}
 				// If setup_password is empty string, we skip the line (clearing it)
 				setupPasswordUpdated = true
 				continue
 			}
-			if strings.HasPrefix(trimmed, "gh_username") && updates["gh_username"] != "" {
-				updatedLines = append(updatedLines, `gh_username = "`+updates["gh_username"]+`"`)
+			if strings.HasPrefix(trimmed, "gh_username") && filteredUpdates["gh_username"] != "" {
+				updatedLines = append(updatedLines, `gh_username = "`+filteredUpdates["gh_username"]+`"`)
 				ghUsernameUpdated = true
 				continue
 			}
-			if strings.HasPrefix(trimmed, "gh_access_token") && updates["gh_access_token"] != "" {
-				updatedLines = append(updatedLines, `gh_access_token = "`+updates["gh_access_token"]+`"`)
+			if strings.HasPrefix(trimmed, "gh_access_token") && filteredUpdates["gh_access_token"] != "" {
+				updatedLines = append(updatedLines, `gh_access_token = "`+filteredUpdates["gh_access_token"]+`"`)
 				ghAccessTokenUpdated = true
 				continue
 			}
-			if strings.HasPrefix(trimmed, "smtp_host") && updates["smtp_host"] != "" {
-				updatedLines = append(updatedLines, `smtp_host = "`+updates["smtp_host"]+`"`)
+			if strings.HasPrefix(trimmed, "smtp_host") && filteredUpdates["smtp_host"] != "" {
+				updatedLines = append(updatedLines, `smtp_host = "`+filteredUpdates["smtp_host"]+`"`)
 				smtpHostUpdated = true
 				continue
 			}
-			if strings.HasPrefix(trimmed, "smtp_port") && updates["smtp_port"] != "" {
-				updatedLines = append(updatedLines, `smtp_port = "`+updates["smtp_port"]+`"`)
+			if strings.HasPrefix(trimmed, "smtp_port") && filteredUpdates["smtp_port"] != "" {
+				updatedLines = append(updatedLines, `smtp_port = "`+filteredUpdates["smtp_port"]+`"`)
 				smtpPortUpdated = true
 				continue
 			}
-			if strings.HasPrefix(trimmed, "smtp_user") && updates["smtp_user"] != "" {
-				updatedLines = append(updatedLines, `smtp_user = "`+updates["smtp_user"]+`"`)
+			if strings.HasPrefix(trimmed, "smtp_user") && filteredUpdates["smtp_user"] != "" {
+				updatedLines = append(updatedLines, `smtp_user = "`+filteredUpdates["smtp_user"]+`"`)
 				smtpUserUpdated = true
 				continue
 			}
-			if strings.HasPrefix(trimmed, "smtp_pass") && updates["smtp_pass"] != "" {
-				updatedLines = append(updatedLines, `smtp_pass = "`+updates["smtp_pass"]+`"`)
+			if strings.HasPrefix(trimmed, "smtp_pass") && filteredUpdates["smtp_pass"] != "" {
+				updatedLines = append(updatedLines, `smtp_pass = "`+filteredUpdates["smtp_pass"]+`"`)
 				smtpPassUpdated = true
 				continue
 			}
-			if strings.HasPrefix(trimmed, "smtp_from") && !strings.HasPrefix(trimmed, "smtp_from_name") && updates["smtp_from"] != "" {
-				updatedLines = append(updatedLines, `smtp_from = "`+updates["smtp_from"]+`"`)
+			if strings.HasPrefix(trimmed, "smtp_from") && !strings.HasPrefix(trimmed, "smtp_from_name") && filteredUpdates["smtp_from"] != "" {
+				updatedLines = append(updatedLines, `smtp_from = "`+filteredUpdates["smtp_from"]+`"`)
 				smtpFromUpdated = true
 				continue
 			}
-			if strings.HasPrefix(trimmed, "smtp_from_name") && updates["smtp_from_name"] != "" {
-				updatedLines = append(updatedLines, `smtp_from_name = "`+updates["smtp_from_name"]+`"`)
+			if strings.HasPrefix(trimmed, "smtp_from_name") && filteredUpdates["smtp_from_name"] != "" {
+				updatedLines = append(updatedLines, `smtp_from_name = "`+filteredUpdates["smtp_from_name"]+`"`)
 				smtpFromNameUpdated = true
 				continue
 			}
@@ -262,78 +313,84 @@ func UpdateConfig(updates map[string]string) error {
 
 	// If still in constants section at the end, add missing fields
 	if inConstantsSection {
-		if !portUpdated && updates["port"] != "" {
-			updatedLines = append(updatedLines, `port = "`+updates["port"]+`"`)
+		if !hostUpdated && filteredUpdates["host"] != "" {
+			updatedLines = append(updatedLines, `host = "`+filteredUpdates["host"]+`"`)
 		}
-		if !authKeyUpdated && updates["auth_key"] != "" {
-			updatedLines = append(updatedLines, `auth_key = "`+updates["auth_key"]+`"`)
+		if !portUpdated && filteredUpdates["port"] != "" {
+			updatedLines = append(updatedLines, `port = "`+filteredUpdates["port"]+`"`)
 		}
-		if !setupCompleteUpdated && updates["setup_complete"] != "" {
-			updatedLines = append(updatedLines, `setup_complete = `+updates["setup_complete"])
+		if !authKeyUpdated && filteredUpdates["auth_key"] != "" {
+			updatedLines = append(updatedLines, `auth_key = "`+filteredUpdates["auth_key"]+`"`)
 		}
-		if !setupPasswordUpdated && updates["setup_password"] != "" {
-			updatedLines = append(updatedLines, `setup_password = "`+updates["setup_password"]+`"`)
+		if !setupCompleteUpdated && filteredUpdates["setup_complete"] != "" {
+			updatedLines = append(updatedLines, `setup_complete = `+filteredUpdates["setup_complete"])
 		}
-		if !ghUsernameUpdated && updates["gh_username"] != "" {
-			updatedLines = append(updatedLines, `gh_username = "`+updates["gh_username"]+`"`)
+		if !setupPasswordUpdated && filteredUpdates["setup_password"] != "" {
+			updatedLines = append(updatedLines, `setup_password = "`+filteredUpdates["setup_password"]+`"`)
 		}
-		if !ghAccessTokenUpdated && updates["gh_access_token"] != "" {
-			updatedLines = append(updatedLines, `gh_access_token = "`+updates["gh_access_token"]+`"`)
+		if !ghUsernameUpdated && filteredUpdates["gh_username"] != "" {
+			updatedLines = append(updatedLines, `gh_username = "`+filteredUpdates["gh_username"]+`"`)
 		}
-		if !smtpHostUpdated && updates["smtp_host"] != "" {
-			updatedLines = append(updatedLines, `smtp_host = "`+updates["smtp_host"]+`"`)
+		if !ghAccessTokenUpdated && filteredUpdates["gh_access_token"] != "" {
+			updatedLines = append(updatedLines, `gh_access_token = "`+filteredUpdates["gh_access_token"]+`"`)
 		}
-		if !smtpPortUpdated && updates["smtp_port"] != "" {
-			updatedLines = append(updatedLines, `smtp_port = "`+updates["smtp_port"]+`"`)
+		if !smtpHostUpdated && filteredUpdates["smtp_host"] != "" {
+			updatedLines = append(updatedLines, `smtp_host = "`+filteredUpdates["smtp_host"]+`"`)
 		}
-		if !smtpUserUpdated && updates["smtp_user"] != "" {
-			updatedLines = append(updatedLines, `smtp_user = "`+updates["smtp_user"]+`"`)
+		if !smtpPortUpdated && filteredUpdates["smtp_port"] != "" {
+			updatedLines = append(updatedLines, `smtp_port = "`+filteredUpdates["smtp_port"]+`"`)
 		}
-		if !smtpPassUpdated && updates["smtp_pass"] != "" {
-			updatedLines = append(updatedLines, `smtp_pass = "`+updates["smtp_pass"]+`"`)
+		if !smtpUserUpdated && filteredUpdates["smtp_user"] != "" {
+			updatedLines = append(updatedLines, `smtp_user = "`+filteredUpdates["smtp_user"]+`"`)
 		}
-		if !smtpFromUpdated && updates["smtp_from"] != "" {
-			updatedLines = append(updatedLines, `smtp_from = "`+updates["smtp_from"]+`"`)
+		if !smtpPassUpdated && filteredUpdates["smtp_pass"] != "" {
+			updatedLines = append(updatedLines, `smtp_pass = "`+filteredUpdates["smtp_pass"]+`"`)
 		}
-		if !smtpFromNameUpdated && updates["smtp_from_name"] != "" {
-			updatedLines = append(updatedLines, `smtp_from_name = "`+updates["smtp_from_name"]+`"`)
+		if !smtpFromUpdated && filteredUpdates["smtp_from"] != "" {
+			updatedLines = append(updatedLines, `smtp_from = "`+filteredUpdates["smtp_from"]+`"`)
 		}
-	} else if !inConstantsSection && len(updates) > 0 {
+		if !smtpFromNameUpdated && filteredUpdates["smtp_from_name"] != "" {
+			updatedLines = append(updatedLines, `smtp_from_name = "`+filteredUpdates["smtp_from_name"]+`"`)
+		}
+	} else if !inConstantsSection && len(filteredUpdates) > 0 {
 		// No constants section found, add it at the end
 		updatedLines = append(updatedLines, "")
 		updatedLines = append(updatedLines, "[constants]")
-		if updates["port"] != "" {
-			updatedLines = append(updatedLines, `port = "`+updates["port"]+`"`)
+		if filteredUpdates["host"] != "" {
+			updatedLines = append(updatedLines, `host = "`+filteredUpdates["host"]+`"`)
 		}
-		if updates["auth_key"] != "" {
-			updatedLines = append(updatedLines, `auth_key = "`+updates["auth_key"]+`"`)
+		if filteredUpdates["port"] != "" {
+			updatedLines = append(updatedLines, `port = "`+filteredUpdates["port"]+`"`)
 		}
-		if updates["setup_complete"] != "" {
-			updatedLines = append(updatedLines, `setup_complete = `+updates["setup_complete"])
+		if filteredUpdates["auth_key"] != "" {
+			updatedLines = append(updatedLines, `auth_key = "`+filteredUpdates["auth_key"]+`"`)
 		}
-		if updates["gh_username"] != "" {
-			updatedLines = append(updatedLines, `gh_username = "`+updates["gh_username"]+`"`)
+		if filteredUpdates["setup_complete"] != "" {
+			updatedLines = append(updatedLines, `setup_complete = `+filteredUpdates["setup_complete"])
 		}
-		if updates["gh_access_token"] != "" {
-			updatedLines = append(updatedLines, `gh_access_token = "`+updates["gh_access_token"]+`"`)
+		if filteredUpdates["gh_username"] != "" {
+			updatedLines = append(updatedLines, `gh_username = "`+filteredUpdates["gh_username"]+`"`)
 		}
-		if updates["smtp_host"] != "" {
-			updatedLines = append(updatedLines, `smtp_host = "`+updates["smtp_host"]+`"`)
+		if filteredUpdates["gh_access_token"] != "" {
+			updatedLines = append(updatedLines, `gh_access_token = "`+filteredUpdates["gh_access_token"]+`"`)
 		}
-		if updates["smtp_port"] != "" {
-			updatedLines = append(updatedLines, `smtp_port = "`+updates["smtp_port"]+`"`)
+		if filteredUpdates["smtp_host"] != "" {
+			updatedLines = append(updatedLines, `smtp_host = "`+filteredUpdates["smtp_host"]+`"`)
 		}
-		if updates["smtp_user"] != "" {
-			updatedLines = append(updatedLines, `smtp_user = "`+updates["smtp_user"]+`"`)
+		if filteredUpdates["smtp_port"] != "" {
+			updatedLines = append(updatedLines, `smtp_port = "`+filteredUpdates["smtp_port"]+`"`)
 		}
-		if updates["smtp_pass"] != "" {
-			updatedLines = append(updatedLines, `smtp_pass = "`+updates["smtp_pass"]+`"`)
+		if filteredUpdates["smtp_user"] != "" {
+			updatedLines = append(updatedLines, `smtp_user = "`+filteredUpdates["smtp_user"]+`"`)
 		}
-		if updates["smtp_from"] != "" {
-			updatedLines = append(updatedLines, `smtp_from = "`+updates["smtp_from"]+`"`)
+		if filteredUpdates["smtp_pass"] != "" {
+			updatedLines = append(updatedLines, `smtp_pass = "`+filteredUpdates["smtp_pass"]+`"`)
 		}
-		if updates["smtp_from_name"] != "" {
-			updatedLines = append(updatedLines, `smtp_from_name = "`+updates["smtp_from_name"]+`"`)
+		if filteredUpdates["smtp_from"] != "" {
+			updatedLines = append(updatedLines, `smtp_from = "`+filteredUpdates["smtp_from"]+`"`)
+		}
+		if filteredUpdates["smtp_from_name"] != "" {
+			updatedLines = append(updatedLines, `smtp_from_name = "`+filteredUpdates["smtp_from_name"]+`"`)
 		}
 	}
 

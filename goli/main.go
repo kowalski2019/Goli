@@ -6,6 +6,7 @@ import (
 	"goli/handler"
 	"goli/middlewares"
 	"goli/queue"
+	response_util "goli/utils"
 	"goli/websocket"
 	"log"
 	"net/http"
@@ -18,8 +19,7 @@ import (
 )
 
 var port = aux.GetFromConfig("constants.port")
-
-var host = "0.0.0.0:" + port
+var host = aux.GetFromConfig("constants.host")
 
 func main() {
 	// Initialize database
@@ -37,6 +37,14 @@ func main() {
 	jobQueue.SetWebSocketHub(wsHub) // Pass hub to queue for broadcasting
 	jobQueue.Start()
 	defer jobQueue.Stop()
+
+	// Authenticate with GitHub Container Registry if credentials are configured
+	if err := response_util.AuthenticateGitHubContainerRegistry(); err != nil {
+		log.Printf("Warning: Failed to authenticate with GitHub Container Registry at startup: %v", err)
+		log.Println("You can configure GitHub credentials in the Settings page")
+	} else {
+		log.Println("GitHub Container Registry authentication successful (if configured)")
+	}
 
 	// Setup graceful shutdown
 	sigChan := make(chan os.Signal, 1)
@@ -98,6 +106,7 @@ func main() {
 		api.POST("/pipelines/upload", handler.UploadPipelineHandler)
 		api.GET("/pipelines/:id", handler.GetPipelineHandler)
 		api.POST("/pipelines/:id/run", handler.RunPipelineHandler)
+		api.DELETE("/pipelines/:id", handler.DeletePipelineHandler)
 
 		// Config management endpoints
 		api.GET("/config", handler.GetConfigHandler)
@@ -151,5 +160,5 @@ func main() {
 	})
 
 	log.Println("Goli CI/CD Backend is running on " + host)
-	log.Fatal(http.ListenAndServe(host, r))
+	log.Fatal(http.ListenAndServe(host+":"+port, r))
 }

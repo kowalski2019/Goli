@@ -99,9 +99,63 @@ func UpdatePipeline(pipeline *models.Pipeline) error {
 	return nil
 }
 
-// DeletePipeline deletes a pipeline by ID
+// DeletePipeline deletes a pipeline by ID and all related jobs and job steps (cascade delete)
 func DeletePipeline(id int64) error {
-	query := `DELETE FROM pipelines WHERE id = ?`
-	_, err := DB.Exec(query, id)
-	return err
+	// Start a transaction to ensure atomicity
+	tx, err := DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// First, get all job IDs for this pipeline
+	jobRows, err := tx.Query(`SELECT id FROM jobs WHERE pipeline_id = ?`, id)
+	if err != nil {
+		return err
+	}
+	defer jobRows.Close()
+
+	var jobIDs []int64
+	for jobRows.Next() {
+		var jobID int64
+		if err := jobRows.Scan(&jobID); err != nil {
+			return err
+		}
+		jobIDs = append(jobIDs, jobID)
+	}
+	jobRows.Close()
+
+	// Delete all job steps for these jobs
+	if len(jobIDs) > 0 {
+		// Build placeholders for IN clause
+		placeholders := ""
+		args := make([]interface{}, len(jobIDs))
+		for i, jobID := range jobIDs {
+			if i > 0 {
+				placeholders += ","
+			}
+			placeholders += "?"
+			args[i] = jobID
+		}
+
+		_, err = tx.Exec(`DELETE FROM job_steps WHERE job_id IN (`+placeholders+`)`, args...)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Delete all jobs for this pipeline
+	_, err = tx.Exec(`DELETE FROM jobs WHERE pipeline_id = ?`, id)
+	if err != nil {
+		return err
+	}
+
+	// Finally, delete the pipeline itself
+	_, err = tx.Exec(`DELETE FROM pipelines WHERE id = ?`, id)
+	if err != nil {
+		return err
+	}
+
+	// Commit the transaction
+	return tx.Commit()
 }

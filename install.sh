@@ -23,19 +23,31 @@ create_goli_user() {
         useradd -r -s /usr/sbin/nologin -d /goli -c "Goli service user" goli
         if [ $? -eq 0 ]; then
             echo "User 'goli' created successfully"
-
-            echo "Adding user 'goli' to docker group ..."
-            usermod -aG docker goli
-            if [ $? -eq 0 ]; then
-                echo "User 'goli' added to docker group successfully"
-            else
-                echo "Failed to add user 'goli' to docker group"
-                exit_func
-            fi
         else
             echo "Failed to create user 'goli'"
             exit_func
         fi
+    fi
+    
+    # Check if docker group exists before trying to add user to it
+    if getent group docker >/dev/null 2>&1; then
+        echo "Adding user 'goli' to docker group ..."
+        usermod -aG docker goli
+        if [ $? -eq 0 ]; then
+            echo "User 'goli' added to docker group successfully"
+        else
+            echo "Warning: Failed to add user 'goli' to docker group"
+            echo "         You may need to add the user manually later with:"
+            echo "         sudo usermod -aG docker goli"
+        fi
+    else
+        echo ""
+        echo "⚠️  WARNING: Docker group does not exist on this system."
+        echo "   The 'goli' user has been created, but cannot be added to the docker group."
+        echo "   If you install Docker later, you will need to manually add the user:"
+        echo "   sudo usermod -aG docker goli"
+        echo "   Then restart the goli service: sudo systemctl restart goli.service"
+        echo ""
     fi
 }
 

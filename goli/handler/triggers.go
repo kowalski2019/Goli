@@ -290,6 +290,11 @@ func DoDockerImageAction(image string, action string) (string, error) {
 		return "", errors.New("image name cannot be empty")
 	}
 
+	// Ensure GitHub Container Registry authentication if pulling from ghcr.io
+	if action == "pull" {
+		response_util.EnsureGitHubAuthForImage(image)
+	}
+
 	var args []string
 	switch action {
 	case "rm":

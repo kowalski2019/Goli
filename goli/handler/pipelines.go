@@ -122,3 +122,26 @@ func RunPipelineHandler(c *gin.Context) {
 	response_util.SendJsonResponseGin(c, 201, job)
 }
 
+// DeletePipelineHandler deletes a pipeline and all related jobs
+func DeletePipelineHandler(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response_util.SendBadRequestResponseGin(c, "Invalid pipeline ID")
+		return
+	}
+
+	// Verify pipeline exists before deletion
+	_, err = database.GetPipeline(id)
+	if err != nil {
+		response_util.SendNotFoundResponseGin(c, "Pipeline not found")
+		return
+	}
+
+	// Delete pipeline (this will cascade delete related jobs and job steps)
+	if err := database.DeletePipeline(id); err != nil {
+		response_util.SendInternalServerErrorResponseGin(c, "Failed to delete pipeline: "+err.Error())
+		return
+	}
+
+	response_util.SendOkResponseGin(c, "Pipeline and all related jobs deleted successfully")
+}
