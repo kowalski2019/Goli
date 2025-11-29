@@ -70,6 +70,34 @@ install_go(){
     fi
 }
 
+build_frontend() {
+    ## Build frontend if Node.js is available
+    if command -v npm &> /dev/null; then
+        echo "Building frontend ..."
+        cd "${curr_dir}/frontend"
+        if [ -f "package.json" ]; then
+            npm install --silent 2>/dev/null
+            npm run build --silent 2>/dev/null
+            if [ $? -eq 0 ]; then
+                echo "Frontend built successfully"
+                cd -
+                return 0
+            else
+                echo "Warning: Frontend build failed, using existing web files if available"
+                cd -
+                return 1
+            fi
+        else
+            echo "Warning: package.json not found in frontend directory"
+            cd -
+            return 1
+        fi
+    else
+        echo "Warning: npm not found, using existing web files if available"
+        return 1
+    fi
+}
+
 compile_and_install_binaries() {
     ## Compile and Install go binary
     _go=`which go`
@@ -102,6 +130,9 @@ install() {
     # Check if go is installed
     install_go
 
+    # Build frontend before compiling
+    #build_frontend
+
     echo "Compiling Goli binary ..."
     compile_and_install_binaries
 
@@ -115,6 +146,20 @@ install() {
     
     # Add setup password to config file
     echo "setup_password = \"${setup_password}\"" >> "/goli/config/config.toml"
+
+    # Copy the web directory to where the binary expects it (same directory as binary)
+    if [ ! -d "${curr_dir}/goli/web" ]; then
+        echo "Error: Web directory not found at ${curr_dir}/goli/web"
+        echo "Please ensure the frontend has been built or the web directory exists"
+        exit_func
+    fi
+    cp -r "${curr_dir}/goli/web" "${goli_work_dir}/web"
+    if [ $? -eq 0 ]; then
+        echo "Web directory copied successfully"
+    else
+        echo "Failed to copy web directory"
+        exit_func
+    fi
 
     # Set ownership of all goli directories and files to goli user
     echo "Setting ownership of Goli directories to goli user ..."
@@ -192,7 +237,16 @@ update() {
     # Ensure goli user exists
     create_goli_user
     
+    # Build frontend before compiling
+    #build_frontend
+    
     compile_and_install_binaries
+    
+    # Copy updated web directory
+    if [ -d "${curr_dir}/goli/web" ]; then
+        cp -r "${curr_dir}/goli/web" "${goli_work_dir}/web"
+        echo "Web directory updated"
+    fi
     
     # Ensure ownership is correct after update
     chown -R goli:goli /usr/local/sbin/goli
