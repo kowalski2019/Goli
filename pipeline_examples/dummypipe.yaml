@@ -15,7 +15,7 @@ steps:
     action: "run"
     config:
       command: "ls"
-      args: ["-laR", "/"]
+      args: ["-laR", "/tmp"]
     on_failure: "continue"
 
   - name: "Test Shell Step 3"
