@@ -28,6 +28,53 @@ func GetFromConfig(configField string) string {
 	return config.GetString(configField)
 }
 
+// getSetupCompleteString properly reads setup_complete as either boolean or string
+// This function reads the config file directly to handle boolean values correctly
+func getSetupCompleteString() string {
+	configPath := GetConfigPath()
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		return "false"
+	}
+
+	lines := strings.Split(string(content), "\n")
+	inConstants := false
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "[constants]" {
+			inConstants = true
+			continue
+		}
+		// Check if we're leaving the constants section
+		if inConstants && strings.HasPrefix(trimmed, "[") && trimmed != "[constants]" {
+			break
+		}
+		// Look for setup_complete in constants section
+		if inConstants && strings.HasPrefix(trimmed, "setup_complete") {
+			// Extract the value after =
+			parts := strings.SplitN(trimmed, "=", 2)
+			if len(parts) == 2 {
+				value := strings.TrimSpace(parts[1])
+				// Remove quotes if present
+				value = strings.Trim(value, `"`)
+				value = strings.Trim(value, `'`)
+				lower := strings.ToLower(value)
+				// Handle boolean values: true, false, 1, 0, yes, no
+				if lower == "true" || lower == "1" || lower == "yes" {
+					return "true"
+				}
+				if lower == "false" || lower == "0" || lower == "no" {
+					return "false"
+				}
+				// Return the value as-is if it's something else
+				return value
+			}
+		}
+	}
+
+	return "false" // Default to false if not found
+}
+
 // GetAllConfig returns all config values as a map
 func GetAllConfig() map[string]string {
 	config_path := GetConfigPath()
@@ -39,7 +86,7 @@ func GetAllConfig() map[string]string {
 	// Get known config fields
 	result["port"] = config.GetString("constants.port")
 	result["auth_key"] = config.GetString("constants.auth_key")
-	result["setup_complete"] = config.GetString("constants.setup_complete")
+	result["setup_complete"] = getSetupCompleteString()
 	result["setup_password"] = config.GetString("constants.setup_password")
 	result["gh_username"] = config.GetString("constants.gh_username")
 	result["gh_access_token"] = config.GetString("constants.gh_access_token")
