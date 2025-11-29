@@ -153,7 +153,7 @@ install() {
         echo "Please ensure the frontend has been built or the web directory exists"
         exit_func
     fi
-    cp -r "${curr_dir}/goli/web" "${goli_work_dir}/web"
+    rsync -avz "${curr_dir}/goli/web" "${goli_work_dir}/"
     if [ $? -eq 0 ]; then
         echo "Web directory copied successfully"
     else
@@ -244,7 +244,8 @@ update() {
     
     # Copy updated web directory
     if [ -d "${curr_dir}/goli/web" ]; then
-        cp -r "${curr_dir}/goli/web" "${goli_work_dir}/web"
+        rm -rf "${goli_work_dir}/web"
+        rsync -avz "${curr_dir}/goli/web" "${goli_work_dir}/"
         echo "Web directory updated"
     fi
     
