@@ -411,6 +411,22 @@ func executeDockerRun(config map[string]interface{}, step *models.JobStep) error
 		args = append(args, image)
 	}
 
+	// add network configuration if specified
+	if network, ok := config["network"].(string); ok {
+		args = append(args, "--network", network)
+	}
+
+	// add others options if specified
+	if opts, ok := config["opts"].(string); ok {
+		optParts := strings.Fields(opts)
+		args = append(args, optParts...)
+	}
+
+	// restart policy if specified
+	if restartPolicy, ok := config["restart"].(string); ok {
+		args = append(args, "--restart", restartPolicy)
+	}
+
 	logToStep(step.ID, fmt.Sprintf("Executing: docker %s", strings.Join(args, " ")))
 
 	cmd := exec.Command("docker", args...)
