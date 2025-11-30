@@ -113,7 +113,26 @@ build_frontend() {
 compile_and_install_binaries() {
     ## Compile and Install go binary
     _go=`which go`
-    cd "${curr_dir}/goli" && $_go mod tidy && $_go build -o "${goli_work_dir}/goli" main.go && cd -
+    
+    # Check for SQLite development libraries (required for go-sqlite3 with CGO)
+    if ! pkg-config --exists sqlite3 2>/dev/null; then
+        echo "Warning: SQLite development libraries not found"
+        echo "Installing libsqlite3-dev (required for database support)..."
+        if command -v apt-get &> /dev/null; then
+            apt-get update -qq && apt-get install -y -qq libsqlite3-dev
+        elif command -v yum &> /dev/null; then
+            yum install -y -q sqlite-devel
+        elif command -v dnf &> /dev/null; then
+            dnf install -y -q sqlite-devel
+        else
+            echo "Error: Cannot automatically install SQLite development libraries"
+            echo "Please install libsqlite3-dev (Debian/Ubuntu) or sqlite-devel (RHEL/CentOS) manually"
+            exit_func
+        fi
+    fi
+    
+    # Build with CGO enabled (required for go-sqlite3)
+    cd "${curr_dir}/goli" && CGO_ENABLED=1 $_go mod tidy && CGO_ENABLED=1 $_go build -o "${goli_work_dir}/goli" main.go && cd -
     if [ $? -eq 0 ]; then
         echo "Goli binary installed successfully"
     else
