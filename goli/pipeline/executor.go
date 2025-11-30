@@ -359,6 +359,7 @@ func executeDockerRun(config map[string]interface{}, step *models.JobStep) error
 	}
 
 	// Build docker run command
+	// Docker command structure: docker run [OPTIONS] IMAGE [COMMAND] [ARG...]
 	args := []string{"run", "--detach"}
 
 	// Add container name if specified
@@ -397,34 +398,34 @@ func executeDockerRun(config map[string]interface{}, step *models.JobStep) error
 		}
 	}
 
-	// Add command if specified
-	if cmd, ok := config["cmd"].(string); ok {
-		args = append(args, image, cmd)
-	} else if cmdList, ok := config["cmd"].([]interface{}); ok {
-		args = append(args, image)
-		for _, cmdArg := range cmdList {
-			if cmdStr, ok := cmdArg.(string); ok {
-				args = append(args, cmdStr)
-			}
-		}
-	} else {
-		args = append(args, image)
-	}
-
-	// add network configuration if specified
+	// Add network configuration if specified
 	if network, ok := config["network"].(string); ok {
 		args = append(args, "--network", network)
 	}
 
-	// add others options if specified
+	// Add other options if specified
 	if opts, ok := config["opts"].(string); ok {
 		optParts := strings.Fields(opts)
 		args = append(args, optParts...)
 	}
 
-	// restart policy if specified
+	// Add restart policy if specified
 	if restartPolicy, ok := config["restart"].(string); ok {
 		args = append(args, "--restart", restartPolicy)
+	}
+
+	// Add image name (must come after all options)
+	args = append(args, image)
+
+	// Add command if specified (must come after image)
+	if cmd, ok := config["cmd"].(string); ok {
+		args = append(args, cmd)
+	} else if cmdList, ok := config["cmd"].([]interface{}); ok {
+		for _, cmdArg := range cmdList {
+			if cmdStr, ok := cmdArg.(string); ok {
+				args = append(args, cmdStr)
+			}
+		}
 	}
 
 	logToStep(step.ID, fmt.Sprintf("Executing: docker %s", strings.Join(args, " ")))
