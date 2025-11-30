@@ -114,9 +114,26 @@ compile_and_install_binaries() {
     ## Compile and Install go binary
     _go=`which go`
     
+    # Check for C compiler (gcc) - required for CGO
+    if ! command -v gcc &> /dev/null; then
+        echo "C compiler (gcc) not found - required for CGO"
+        echo "Installing build-essential (includes gcc and other build tools)..."
+        if command -v apt-get &> /dev/null; then
+            apt-get update -qq && apt-get install -y -qq build-essential
+        elif command -v yum &> /dev/null; then
+            yum install -y -q gcc gcc-c++ make
+        elif command -v dnf &> /dev/null; then
+            dnf install -y -q gcc gcc-c++ make
+        else
+            echo "Error: Cannot automatically install C compiler"
+            echo "Please install build-essential (Debian/Ubuntu) or gcc (RHEL/CentOS) manually"
+            exit_func
+        fi
+    fi
+    
     # Check for SQLite development libraries (required for go-sqlite3 with CGO)
     if ! pkg-config --exists sqlite3 2>/dev/null; then
-        echo "Warning: SQLite development libraries not found"
+        echo "SQLite development libraries not found"
         echo "Installing libsqlite3-dev (required for database support)..."
         if command -v apt-get &> /dev/null; then
             apt-get update -qq && apt-get install -y -qq libsqlite3-dev
