@@ -359,7 +359,7 @@ func executeDockerRun(config map[string]interface{}, step *models.JobStep) error
 	}
 
 	// Build docker run command
-	args := []string{"run", "--rm", "--detach"}
+	args := []string{"run", "--detach"}
 
 	// Add container name if specified
 	if container, ok := config["container"].(string); ok {
