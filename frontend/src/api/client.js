@@ -15,6 +15,38 @@ export function clearToken() {
   localStorage.removeItem('goli_token')
 }
 
+// Event name for automatic logout
+export const AUTO_LOGOUT_EVENT = 'goli:auto-logout'
+
+// Dispatch auto-logout event to notify App.vue
+function triggerAutoLogout() {
+  clearToken()
+  window.dispatchEvent(new CustomEvent(AUTO_LOGOUT_EVENT))
+}
+
+// Wrapper for fetch that handles authentication errors
+// Automatically logs out user if token is expired (401/403)
+export async function fetchWithAuth(url, options = {}) {
+  const response = await fetch(url, options)
+  
+  // Check for authentication errors (401 Unauthorized or 403 Forbidden)
+  if (response.status === 401 || response.status === 403) {
+    // Only trigger logout if we have a token (to avoid infinite loops)
+    if (getToken()) {
+      console.warn('Session expired. Logging out automatically.')
+      triggerAutoLogout()
+    }
+    // Throw an error so the calling code can handle it
+    const error = await response.json().catch(() => ({ 
+      error: 'Authentication failed',
+      description: 'Your session has expired. Please log in again.' 
+    }))
+    throw new Error(error.description || error.error || 'Authentication failed')
+  }
+  
+  return response
+}
+
 // Authorization key management (for setup)
 export function setAuthorizationKey(key) {
   localStorage.setItem('goli_authorization_key', key)
@@ -132,7 +164,7 @@ export async function verify2FA(data) {
 
 export async function logout() {
   try {
-    await fetch(`${API_BASE}/auth/logout`, {
+    await fetchWithAuth(`${API_BASE}/auth/logout`, {
       method: 'POST',
       headers: getBearerAuthHeaders()
     })
@@ -146,20 +178,26 @@ export async function logout() {
 // Config API
 export async function getConfig(useAuthKey = false) {
   const headers = useAuthKey ? getAuthKeyHeaders() : getBearerAuthHeaders()
-  const response = await fetch(`${API_BASE}/config`, {
-    headers
-  })
+  const response = useAuthKey 
+    ? await fetch(`${API_BASE}/config`, { headers })
+    : await fetchWithAuth(`${API_BASE}/config`, { headers })
   if (!response.ok) throw new Error('Failed to fetch config')
   return response.json()
 }
 
 export async function updateConfig(configData, useAuthKey = false) {
   const headers = useAuthKey ? getAuthKeyHeaders() : getBearerAuthHeaders()
-  const response = await fetch(`${API_BASE}/config`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(configData)
-  })
+  const response = useAuthKey
+    ? await fetch(`${API_BASE}/config`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(configData)
+      })
+    : await fetchWithAuth(`${API_BASE}/config`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(configData)
+      })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.description || 'Failed to update config')
@@ -169,7 +207,7 @@ export async function updateConfig(configData, useAuthKey = false) {
 
 // Users API
 export async function getUsers() {
-  const response = await fetch(`${API_BASE}/users`, {
+  const response = await fetchWithAuth(`${API_BASE}/users`, {
     headers: getBearerAuthHeaders()
   })
   if (!response.ok) throw new Error('Failed to fetch users')
@@ -178,11 +216,17 @@ export async function getUsers() {
 
 export async function createUser(userData, useAuthKey = false) {
   const headers = useAuthKey ? getAuthKeyHeaders() : getBearerAuthHeaders()
-  const response = await fetch(`${API_BASE}/users`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(userData)
-  })
+  const response = useAuthKey
+    ? await fetch(`${API_BASE}/users`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(userData)
+      })
+    : await fetchWithAuth(`${API_BASE}/users`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(userData)
+      })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.description || 'Failed to create user')
@@ -191,7 +235,7 @@ export async function createUser(userData, useAuthKey = false) {
 }
 
 export async function updateUser(id, userData) {
-  const response = await fetch(`${API_BASE}/users/${id}`, {
+  const response = await fetchWithAuth(`${API_BASE}/users/${id}`, {
     method: 'PUT',
     headers: getBearerAuthHeaders(),
     body: JSON.stringify(userData)
@@ -204,7 +248,7 @@ export async function updateUser(id, userData) {
 }
 
 export async function deleteUser(id) {
-  const response = await fetch(`${API_BASE}/users/${id}`, {
+  const response = await fetchWithAuth(`${API_BASE}/users/${id}`, {
     method: 'DELETE',
     headers: getBearerAuthHeaders()
   })
@@ -218,7 +262,7 @@ export async function deleteUser(id) {
 // Jobs API
 export async function getJobs(params = {}) {
   const query = new URLSearchParams(params).toString()
-  const response = await fetch(`${API_BASE}/jobs${query ? '?' + query : ''}`, {
+  const response = await fetchWithAuth(`${API_BASE}/jobs${query ? '?' + query : ''}`, {
     headers: getBearerAuthHeaders()
   })
   if (!response.ok) throw new Error('Failed to fetch jobs')
@@ -228,7 +272,7 @@ export async function getJobs(params = {}) {
 }
 
 export async function getJob(id) {
-  const response = await fetch(`${API_BASE}/jobs/${id}`, {
+  const response = await fetchWithAuth(`${API_BASE}/jobs/${id}`, {
     headers: getBearerAuthHeaders()
   })
   if (!response.ok) throw new Error('Failed to fetch job')
@@ -241,7 +285,7 @@ export async function getJob(id) {
 }
 
 export async function createJob(jobData) {
-  const response = await fetch(`${API_BASE}/jobs`, {
+  const response = await fetchWithAuth(`${API_BASE}/jobs`, {
     method: 'POST',
     headers: getBearerAuthHeaders(),
     body: JSON.stringify(jobData)
@@ -254,7 +298,7 @@ export async function createJob(jobData) {
 }
 
 export async function cancelJob(id) {
-  const response = await fetch(`${API_BASE}/jobs/${id}/cancel`, {
+  const response = await fetchWithAuth(`${API_BASE}/jobs/${id}/cancel`, {
     method: 'POST',
     headers: getBearerAuthHeaders()
   })
@@ -267,7 +311,7 @@ export async function cancelJob(id) {
 
 // Pipelines API
 export async function getPipelines() {
-  const response = await fetch(`${API_BASE}/pipelines`, {
+  const response = await fetchWithAuth(`${API_BASE}/pipelines`, {
     headers: getBearerAuthHeaders()
   })
   if (!response.ok) throw new Error('Failed to fetch pipelines')
@@ -277,7 +321,7 @@ export async function getPipelines() {
 }
 
 export async function getPipeline(id) {
-  const response = await fetch(`${API_BASE}/pipelines/${id}`, {
+  const response = await fetchWithAuth(`${API_BASE}/pipelines/${id}`, {
     headers: getBearerAuthHeaders()
   })
   if (!response.ok) throw new Error('Failed to fetch pipeline')
@@ -285,7 +329,7 @@ export async function getPipeline(id) {
 }
 
 export async function deletePipeline(id) {
-  const response = await fetch(`${API_BASE}/pipelines/${id}`, {
+  const response = await fetchWithAuth(`${API_BASE}/pipelines/${id}`, {
     method: 'DELETE',
     headers: getBearerAuthHeaders()
   })
@@ -298,11 +342,17 @@ export async function deletePipeline(id) {
 
 export async function uploadPipeline(formData, useAuthKey = false) {
   const headers = getFormHeaders(useAuthKey)
-  const response = await fetch(`${API_BASE}/pipelines/upload`, {
-    method: 'POST',
-    headers,
-    body: formData
-  })
+  const response = useAuthKey
+    ? await fetch(`${API_BASE}/pipelines/upload`, {
+        method: 'POST',
+        headers,
+        body: formData
+      })
+    : await fetchWithAuth(`${API_BASE}/pipelines/upload`, {
+        method: 'POST',
+        headers,
+        body: formData
+      })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.description || 'Failed to upload pipeline')
@@ -311,7 +361,7 @@ export async function uploadPipeline(formData, useAuthKey = false) {
 }
 
 export async function runPipeline(id, jobData = {}) {
-  const response = await fetch(`${API_BASE}/pipelines/${id}/run`, {
+  const response = await fetchWithAuth(`${API_BASE}/pipelines/${id}/run`, {
     method: 'POST',
     headers: getBearerAuthHeaders(),
     body: JSON.stringify(jobData)

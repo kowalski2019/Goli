@@ -96,8 +96,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { createWebSocket, getToken, getSetupStatus, logout } from './api/client'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { createWebSocket, getToken, getSetupStatus, logout, AUTO_LOGOUT_EVENT } from './api/client'
 import Dashboard from './components/Dashboard.vue'
 import Pipelines from './components/Pipelines.vue'
 import Jobs from './components/Jobs.vue'
@@ -166,12 +166,23 @@ async function handleLogout() {
   }
 }
 
+// Handle automatic logout when session expires
+function handleAutoLogout() {
+  console.log('Session expired. Logging out automatically.')
+  isAuthenticated.value = false
+  activeTab.value = 'dashboard'
+  wsConnected.value = false
+}
+
 onMounted(() => {
   // Check setup status first
   checkSetupStatus()
 
   // Auth check
   isAuthenticated.value = !!getToken()
+
+  // Listen for automatic logout events (when token expires)
+  window.addEventListener(AUTO_LOGOUT_EVENT, handleAutoLogout)
 
   // Setup WebSocket connection (only if setup is complete and authenticated)
   if (!showSetupWizard.value && isAuthenticated.value) {
@@ -186,5 +197,10 @@ onMounted(() => {
       wsConnected.value = true
     }, 500)
   }
+})
+
+onUnmounted(() => {
+  // Clean up event listener
+  window.removeEventListener(AUTO_LOGOUT_EVENT, handleAutoLogout)
 })
 </script>
