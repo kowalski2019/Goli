@@ -109,6 +109,17 @@ func createTables() error {
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (user_id) REFERENCES users(id)
 		)`,
+		`CREATE TABLE IF NOT EXISTS pipeline_variables (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			pipeline_id INTEGER NOT NULL,
+			name TEXT NOT NULL,
+			value TEXT NOT NULL,
+			is_secret INTEGER DEFAULT 0,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (pipeline_id) REFERENCES pipelines(id) ON DELETE CASCADE,
+			UNIQUE(pipeline_id, name)
+		)`,
 	}
 
 	for _, query := range queries {

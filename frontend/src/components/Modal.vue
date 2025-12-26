@@ -28,7 +28,7 @@
           <div
             v-if="show"
             :class="[
-              'relative bg-white rounded-xl shadow-2xl w-full',
+              'relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full',
               size === 'sm' ? 'max-w-md' : size === 'md' ? 'max-w-lg' : size === 'lg' ? 'max-w-2xl' : size === 'xl' ? 'max-w-4xl' : 'max-w-md',
               containerClass
             ]"
@@ -36,18 +36,18 @@
             <!-- Header -->
             <div
               v-if="title || $slots.header"
-              class="flex items-center justify-between px-6 py-4 border-b border-gray-200"
+              class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700"
             >
               <div class="flex items-center gap-3">
                 <slot name="icon" />
-                <h3 class="text-lg font-semibold text-gray-900">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                   <slot name="title">{{ title }}</slot>
                 </h3>
               </div>
               <button
                 v-if="closable"
                 @click="$emit('close')"
-                class="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-1 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -63,7 +63,7 @@
             <!-- Footer -->
             <div
               v-if="$slots.footer"
-              class="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl"
+              class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 rounded-b-xl"
             >
               <slot name="footer" />
             </div>

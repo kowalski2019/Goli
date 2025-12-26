@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-3xl font-bold text-white mb-1">Job Logs - #{{ jobId }}</h2>
-        <p class="text-gray-300 text-sm">View detailed logs for each pipeline step</p>
+        <h2 class="text-3xl font-bold text-white dark:text-gray-100 mb-1">Job Logs - #{{ jobId }}</h2>
+        <p class="text-gray-300 dark:text-gray-400 text-sm">View detailed logs for each pipeline step</p>
       </div>
       <button
         @click="$emit('close')"
@@ -18,20 +18,20 @@
     </div>
 
     <div class="card hover:shadow-lg transition-shadow duration-200">
-      <div class="flex h-[600px] border border-gray-200 rounded-lg overflow-hidden">
+      <div class="flex h-[600px] border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
         <!-- Steps Sidebar -->
-        <div class="w-64 border-r border-gray-200 overflow-y-auto bg-gray-50 scrollbar-thin">
+        <div class="w-64 border-r border-gray-200 dark:border-gray-700 overflow-y-auto bg-gray-50 dark:bg-gray-700/50 scrollbar-thin">
           <div class="p-4">
             <div class="flex items-center justify-between mb-4">
-              <h4 class="text-sm font-semibold text-gray-900">Steps</h4>
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white">Steps</h4>
               <button
                 v-if="selectedStep && (selectedStep.status === 'running' || autoRefresh)"
                 @click="autoRefresh = !autoRefresh"
                 :class="[
                   'px-2 py-1 text-xs rounded transition-colors',
                   autoRefresh
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    ? 'bg-primary-600 dark:bg-primary-500 text-white'
+                    : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
                 ]"
               >
                 {{ autoRefresh ? 'Auto: ON' : 'Auto: OFF' }}
@@ -40,7 +40,7 @@
             
             <div v-if="loadingSteps" class="flex items-center justify-center py-8">
               <svg
-                class="animate-spin h-6 w-6 text-primary-600"
+                class="animate-spin h-6 w-6 text-primary-600 dark:text-primary-400"
                 fill="none"
                 viewBox="0 0 24 24"
               >
@@ -49,7 +49,7 @@
               </svg>
             </div>
             
-            <div v-else-if="steps.length === 0" class="text-center py-8 text-sm text-gray-500">
+            <div v-else-if="steps.length === 0" class="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
               No steps found
             </div>
             
@@ -62,20 +62,20 @@
                   'w-full text-left px-3 py-3 rounded-lg text-sm transition-all duration-150',
                   'border-2',
                   selectedStep?.id === step.id
-                    ? 'bg-primary-50 text-primary-900 border-primary-300 shadow-sm'
-                    : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300'
+                    ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-900 dark:text-primary-200 border-primary-300 dark:border-primary-700 shadow-sm'
+                    : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                 ]"
               >
                 <div class="flex items-center justify-between mb-1.5">
                   <div class="flex items-center gap-2">
-                    <span class="flex items-center justify-center w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs font-semibold">
+                    <span class="flex items-center justify-center w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 text-xs font-semibold">
                       {{ step.step_order }}
                     </span>
-                    <span class="font-medium text-gray-900">{{ step.step_name }}</span>
+                    <span class="font-medium text-gray-900 dark:text-white">{{ step.step_name }}</span>
                   </div>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="text-xs text-gray-500">Step {{ step.step_order }}</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Step {{ step.step_order }}</span>
                   <StatusBadge :status="step.status" :show-dot="true" />
                 </div>
               </button>
@@ -84,12 +84,12 @@
         </div>
 
         <!-- Logs Content -->
-        <div class="flex-1 flex flex-col overflow-hidden bg-white">
-          <div v-if="selectedStep" class="p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+        <div class="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-800">
+          <div v-if="selectedStep" class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-700/50 dark:to-gray-800">
             <div class="flex items-center justify-between mb-3">
               <div>
-                <h4 class="font-semibold text-gray-900 text-lg">{{ selectedStep.step_name }}</h4>
-                <p class="text-sm text-gray-500 mt-0.5">Step {{ selectedStep.step_order }}</p>
+                <h4 class="font-semibold text-gray-900 dark:text-white text-lg">{{ selectedStep.step_name }}</h4>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Step {{ selectedStep.step_order }}</p>
               </div>
               <StatusBadge :status="selectedStep.status" />
             </div>
@@ -135,30 +135,30 @@
 
           <div
             ref="logsContainer"
-            class="flex-1 overflow-y-auto p-4 bg-gray-900 scrollbar-thin"
+            class="flex-1 overflow-y-auto p-4 bg-gray-900 dark:bg-gray-950 scrollbar-thin"
           >
             <div v-if="loadingLogs" class="flex items-center justify-center h-full">
               <div class="text-center">
                 <svg
-                  class="animate-spin h-8 w-8 text-green-400 mx-auto mb-2"
+                  class="animate-spin h-8 w-8 text-green-400 dark:text-green-300 mx-auto mb-2"
                   fill="none"
                   viewBox="0 0 24 24"
                 >
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <p class="text-gray-400">Loading logs...</p>
+                <p class="text-gray-400 dark:text-gray-500">Loading logs...</p>
               </div>
             </div>
             <div
               v-else-if="selectedStep && selectedStep.logs"
-              class="font-mono text-sm text-green-400 whitespace-pre-wrap break-words"
+              class="font-mono text-sm text-green-400 dark:text-green-300 whitespace-pre-wrap break-words"
             >
               {{ selectedStep.logs }}
             </div>
             <div
               v-else-if="selectedStep && !selectedStep.logs"
-              class="flex items-center justify-center h-full text-gray-500"
+              class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400"
             >
               <div class="text-center">
                 <svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,7 +169,7 @@
             </div>
             <div
               v-else
-              class="flex items-center justify-center h-full text-gray-500"
+              class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400"
             >
               <div class="text-center">
                 <svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,12 +182,12 @@
           </div>
 
           <!-- Job-level logs -->
-          <div v-if="jobLogs" class="border-t border-gray-200 p-4 bg-gray-50">
+          <div v-if="jobLogs" class="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-700/50">
             <div class="flex items-center justify-between mb-2">
-              <h4 class="text-sm font-semibold text-gray-900">Job Logs</h4>
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white">Job Logs</h4>
               <button
                 @click="copyJobLogs"
-                class="text-xs text-primary-600 hover:text-primary-800"
+                class="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300"
               >
                 Copy
               </button>

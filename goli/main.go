@@ -105,6 +105,7 @@ func main() {
 		api.POST("/pipelines", handler.CreatePipelineHandler)
 		api.POST("/pipelines/upload", handler.UploadPipelineHandler)
 		api.GET("/pipelines/:id", handler.GetPipelineHandler)
+		api.PUT("/pipelines/:id", handler.UpdatePipelineHandler)
 		api.POST("/pipelines/:id/run", handler.RunPipelineHandler)
 		api.DELETE("/pipelines/:id", handler.DeletePipelineHandler)
 

@@ -194,10 +194,10 @@ export async function updateConfig(configData, useAuthKey = false) {
         body: JSON.stringify(configData)
       })
     : await fetchWithAuth(`${API_BASE}/config`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(configData)
-      })
+    method: 'POST',
+    headers,
+    body: JSON.stringify(configData)
+  })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.description || 'Failed to update config')
@@ -223,10 +223,10 @@ export async function createUser(userData, useAuthKey = false) {
         body: JSON.stringify(userData)
       })
     : await fetchWithAuth(`${API_BASE}/users`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(userData)
-      })
+    method: 'POST',
+    headers,
+    body: JSON.stringify(userData)
+  })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.description || 'Failed to create user')
@@ -328,6 +328,32 @@ export async function getPipeline(id) {
   return response.json()
 }
 
+export async function createPipeline(pipelineData) {
+  const response = await fetchWithAuth(`${API_BASE}/pipelines`, {
+    method: 'POST',
+    headers: getBearerAuthHeaders(),
+    body: JSON.stringify(pipelineData)
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.description || error.error || 'Failed to create pipeline')
+  }
+  return response.json()
+}
+
+export async function updatePipeline(id, pipelineData) {
+  const response = await fetchWithAuth(`${API_BASE}/pipelines/${id}`, {
+    method: 'PUT',
+    headers: getBearerAuthHeaders(),
+    body: JSON.stringify(pipelineData)
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.description || error.error || 'Failed to update pipeline')
+  }
+  return response.json()
+}
+
 export async function deletePipeline(id) {
   const response = await fetchWithAuth(`${API_BASE}/pipelines/${id}`, {
     method: 'DELETE',
@@ -349,10 +375,10 @@ export async function uploadPipeline(formData, useAuthKey = false) {
         body: formData
       })
     : await fetchWithAuth(`${API_BASE}/pipelines/upload`, {
-        method: 'POST',
-        headers,
-        body: formData
-      })
+    method: 'POST',
+    headers,
+    body: formData
+  })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.description || 'Failed to upload pipeline')

@@ -1,30 +1,30 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 p-4">
-    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-8">
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
+    <div class="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
       <div class="flex flex-col items-center mb-6">
         <img src="/goli-logo.jpg" alt="Goli Logo" class="h-16 w-16 rounded-full shadow-md mb-3" />
-        <h2 class="text-2xl font-bold text-gray-900">Goli Setup Wizard</h2>
-        <p class="text-gray-500">Complete the setup to get started</p>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Goli Setup Wizard</h2>
+        <p class="text-gray-500 dark:text-gray-400">Complete the setup to get started</p>
       </div>
 
       <!-- Step 0: Setup Password -->
       <div v-if="currentStep === 0" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Setup Password</label>
-          <p class="text-xs text-gray-500 mb-2">Enter the setup password shown during installation</p>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Setup Password</label>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Enter the setup password shown during installation</p>
           <input 
             v-model="setupPassword" 
             type="password" 
             required 
-            class="w-full rounded-lg border-gray-300 focus:ring-primary-500 focus:border-primary-500"
+            class="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-primary-500 focus:border-primary-500"
             placeholder="Enter setup password"
           />
-          <div v-if="passwordError" class="mt-2 text-sm text-red-600">{{ passwordError }}</div>
+          <div v-if="passwordError" class="mt-2 text-sm text-red-600 dark:text-red-400">{{ passwordError }}</div>
         </div>
         <button 
           @click="verifySetupPasswordHandler" 
           :disabled="isVerifying"
-          class="w-full py-2.5 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition disabled:opacity-50"
+          class="w-full py-2.5 rounded-lg bg-primary-600 dark:bg-primary-500 text-white hover:bg-primary-700 dark:hover:bg-primary-600 transition disabled:opacity-50"
         >
           {{ isVerifying ? 'Verifying...' : 'Continue' }}
         </button>
@@ -32,29 +32,29 @@
 
       <!-- Step 1: Admin User -->
       <div v-if="currentStep === 1" class="space-y-4">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Create Admin User</h3>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create Admin User</h3>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-          <input v-model="adminUser.username" type="text" required class="w-full rounded-lg border-gray-300 focus:ring-primary-500 focus:border-primary-500" />
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+          <input v-model="adminUser.username" type="text" required class="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-primary-500 focus:border-primary-500" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-          <input v-model="adminUser.email" type="email" class="w-full rounded-lg border-gray-300 focus:ring-primary-500 focus:border-primary-500" />
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+          <input v-model="adminUser.email" type="email" class="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-primary-500 focus:border-primary-500" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-          <input v-model="adminUser.password" type="password" required class="w-full rounded-lg border-gray-300 focus:ring-primary-500 focus:border-primary-500" />
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+          <input v-model="adminUser.password" type="password" required class="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-primary-500 focus:border-primary-500" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-          <input v-model="adminUser.confirmPassword" type="password" required class="w-full rounded-lg border-gray-300 focus:ring-primary-500 focus:border-primary-500" />
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm Password</label>
+          <input v-model="adminUser.confirmPassword" type="password" required class="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-primary-500 focus:border-primary-500" />
         </div>
-        <div v-if="step1Error" class="text-sm text-red-600">{{ step1Error }}</div>
+        <div v-if="step1Error" class="text-sm text-red-600 dark:text-red-400">{{ step1Error }}</div>
         <div class="flex space-x-3">
-          <button @click="prevStep" class="flex-1 py-2.5 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
+          <button @click="prevStep" class="flex-1 py-2.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition">
             Back
           </button>
-          <button @click="nextStep" :disabled="!canProceedStep1" class="flex-1 py-2.5 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition disabled:opacity-50">
+          <button @click="nextStep" :disabled="!canProceedStep1" class="flex-1 py-2.5 rounded-lg bg-primary-600 dark:bg-primary-500 text-white hover:bg-primary-700 dark:hover:bg-primary-600 transition disabled:opacity-50">
             Next
           </button>
         </div>
@@ -62,25 +62,25 @@
 
       <!-- Step 2: System Settings -->
       <div v-if="currentStep === 2" class="space-y-4">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">System Settings</h3>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">System Settings</h3>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Port</label>
-          <input v-model.number="settings.port" type="number" class="w-full rounded-lg border-gray-300 focus:ring-primary-500 focus:border-primary-500" />
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Port</label>
+          <input v-model.number="settings.port" type="number" class="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-primary-500 focus:border-primary-500" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Auth Key</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Auth Key</label>
           <div class="flex space-x-2">
-            <input v-model="settings.authKey" type="text" readonly class="flex-1 rounded-lg border-gray-300 bg-gray-100" />
-            <button @click="generateNewAuthKey" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
+            <input v-model="settings.authKey" type="text" readonly class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+            <button @click="generateNewAuthKey" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition">
               Generate
             </button>
           </div>
         </div>
         <div class="flex space-x-3">
-          <button @click="prevStep" class="flex-1 py-2.5 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
+          <button @click="prevStep" class="flex-1 py-2.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition">
             Back
           </button>
-          <button @click="nextStep" class="flex-1 py-2.5 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition">
+          <button @click="nextStep" class="flex-1 py-2.5 rounded-lg bg-primary-600 dark:bg-primary-500 text-white hover:bg-primary-700 dark:hover:bg-primary-600 transition">
             Next
           </button>
         </div>
@@ -88,15 +88,15 @@
 
       <!-- Step 3: Review & Complete -->
       <div v-if="currentStep === 3" class="space-y-4">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Review & Complete</h3>
-        <div class="bg-gray-50 rounded-lg p-4 space-y-2">
-          <div><strong>Username:</strong> {{ adminUser.username }}</div>
-          <div><strong>Email:</strong> {{ adminUser.email || 'Not provided' }}</div>
-          <div><strong>Port:</strong> {{ settings.port }}</div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Review & Complete</h3>
+        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-2">
+          <div class="text-gray-900 dark:text-gray-100"><strong>Username:</strong> {{ adminUser.username }}</div>
+          <div class="text-gray-900 dark:text-gray-100"><strong>Email:</strong> {{ adminUser.email || 'Not provided' }}</div>
+          <div class="text-gray-900 dark:text-gray-100"><strong>Port:</strong> {{ settings.port }}</div>
         </div>
-        <div v-if="setupError" class="text-sm text-red-600">{{ setupError }}</div>
+        <div v-if="setupError" class="text-sm text-red-600 dark:text-red-400">{{ setupError }}</div>
         <div class="flex space-x-3">
-          <button @click="prevStep" class="flex-1 py-2.5 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
+          <button @click="prevStep" class="flex-1 py-2.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition">
             Back
           </button>
           <button 

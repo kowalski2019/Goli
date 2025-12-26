@@ -3,18 +3,29 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-3xl font-bold text-white mb-1">Pipelines</h2>
-        <p class="text-gray-300 text-sm">Manage and execute your CI/CD pipelines</p>
+        <h2 class="text-3xl font-bold text-white dark:text-gray-100 mb-1">Pipelines</h2>
+        <p class="text-gray-300 dark:text-gray-400 text-sm">Manage and execute your CI/CD pipelines</p>
       </div>
-      <button
-        @click="showUploadModal = true"
-        class="btn btn-primary px-6 py-2.5 flex items-center gap-2 hover:shadow-lg transition-shadow"
-      >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Upload Pipeline
-      </button>
+      <div class="flex items-center gap-3">
+        <button
+          @click="createPipeline"
+          class="btn btn-primary px-6 py-2.5 flex items-center gap-2 hover:shadow-lg transition-shadow"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Create Pipeline
+        </button>
+        <button
+          @click="showUploadModal = true"
+          class="btn btn-secondary px-6 py-2.5 flex items-center gap-2 hover:shadow-lg transition-shadow"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          Upload YAML
+        </button>
+      </div>
     </div>
 
     <!-- Pipelines List -->
@@ -29,18 +40,18 @@
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        <p class="text-gray-500 text-sm">Loading pipelines...</p>
+        <p class="text-gray-500 dark:text-gray-400 text-sm">Loading pipelines...</p>
       </div>
 
       <!-- Empty State -->
       <div v-else-if="pipelines.length === 0" class="flex flex-col items-center justify-center py-12">
-        <div class="p-4 bg-gray-100 rounded-full mb-4">
-          <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="p-4 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+          <svg class="w-12 h-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         </div>
-        <h3 class="text-lg font-semibold text-gray-900 mb-1">No pipelines found</h3>
-        <p class="text-gray-500 text-sm mb-4">Upload a YAML file to get started!</p>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">No pipelines found</h3>
+        <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">Upload a YAML file to get started!</p>
         <button @click="showUploadModal = true" class="btn btn-primary">
           Upload Your First Pipeline
         </button>
@@ -49,9 +60,9 @@
       <!-- Pipelines Table -->
       <div v-else class="overflow-x-auto scrollbar-thin">
         <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
+          <thead class="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                 ID
               </th>
               <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -68,30 +79,30 @@
               </th>
             </tr>
           </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
+          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             <tr
               v-for="pipeline in pipelines"
               :key="pipeline.id"
-              class="hover:bg-gray-50 transition-colors duration-150"
+              class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150"
             >
               <td class="px-6 py-4 whitespace-nowrap">
-                <span class="text-sm font-medium text-gray-900">#{{ pipeline.id }}</span>
+                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">#{{ pipeline.id }}</span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center gap-2">
-                  <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span class="text-sm font-medium text-gray-900">{{ pipeline.name }}</span>
+                  <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ pipeline.name }}</span>
                 </div>
               </td>
               <td class="px-6 py-4">
-                <span class="text-sm text-gray-500 line-clamp-1">
+                <span class="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
                   {{ pipeline.description || '-' }}
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span class="text-sm text-gray-500">
+                <span class="text-sm text-gray-500 dark:text-gray-400">
                   {{ formatDate(pipeline.created_at) }}
                 </span>
               </td>
@@ -122,6 +133,15 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     {{ runningPipeline === pipeline.id ? 'Running...' : 'Run' }}
+                  </button>
+                  <button
+                    @click="editPipeline(pipeline.id)"
+                    class="btn btn-secondary text-sm px-4 py-1.5 flex items-center gap-1.5"
+                  >
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit
                   </button>
                   <button
                     @click="viewPipeline(pipeline.id)"
@@ -188,26 +208,26 @@
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       @click.self="cancelDelete"
     >
-      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
         <div class="p-6">
           <div class="flex items-center mb-4">
-            <div class="flex-shrink-0 mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-              <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex-shrink-0 mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900">
+              <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
           </div>
-          <h3 class="text-lg font-medium text-gray-900 text-center mb-2">Delete Pipeline</h3>
-          <p class="text-sm text-gray-500 text-center mb-4">
-            Are you sure you want to delete <strong>{{ deleteConfirmPipeline.name }}</strong>?
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white text-center mb-2">Delete Pipeline</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 text-center mb-4">
+            Are you sure you want to delete <strong class="text-gray-900 dark:text-white">{{ deleteConfirmPipeline.name }}</strong>?
           </p>
-          <p class="text-xs text-red-600 text-center mb-6 bg-red-50 p-3 rounded">
+          <p class="text-xs text-red-600 dark:text-red-400 text-center mb-6 bg-red-50 dark:bg-red-900/30 p-3 rounded">
             ⚠️ This will permanently delete the pipeline and all associated jobs and job steps. This action cannot be undone.
           </p>
           <div class="flex gap-3">
             <button
               @click="cancelDelete"
-              class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
             >
               Cancel
             </button>
@@ -231,7 +251,7 @@ import { getPipelines, runPipeline as runPipelineAPI, deletePipeline as deletePi
 import UploadPipelineModal from './UploadPipelineModal.vue'
 import PipelineDetailModal from './PipelineDetailModal.vue'
 
-const emit = defineEmits(['view-logs'])
+const emit = defineEmits(['view-logs', 'create-pipeline', 'edit-pipeline'])
 
 const loading = ref(false)
 const pipelines = ref([])
@@ -276,12 +296,21 @@ async function runPipeline(id, name) {
   }
 }
 
+function createPipeline() {
+  emit('create-pipeline')
+}
+
+function editPipeline(id) {
+  emit('edit-pipeline', id)
+}
+
 function viewPipeline(id) {
   const pipeline = pipelines.value.find(p => p.id === id)
   if (pipeline) {
     selectedPipeline.value = pipeline
   }
 }
+
 
 function handleViewLogs(jobId) {
   emit('view-logs', jobId)

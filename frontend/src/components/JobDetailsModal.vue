@@ -1,11 +1,11 @@
 <template>
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
-        <h3 class="text-lg font-semibold text-gray-900">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between sticky top-0 bg-white dark:bg-gray-800">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
           Job Details - #{{ job.id }}
         </h3>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600">
+        <button @click="$emit('close')" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -15,14 +15,14 @@
       <div class="p-6 space-y-6">
         <!-- Job Info -->
         <div>
-          <h4 class="text-sm font-medium text-gray-500 mb-2">Job Information</h4>
+          <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Job Information</h4>
           <dl class="grid grid-cols-2 gap-4">
             <div>
-              <dt class="text-sm text-gray-500">Name</dt>
-              <dd class="mt-1 text-sm text-gray-900">{{ job.name }}</dd>
+              <dt class="text-sm text-gray-500 dark:text-gray-400">Name</dt>
+              <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ job.name }}</dd>
             </div>
             <div>
-              <dt class="text-sm text-gray-500">Status</dt>
+              <dt class="text-sm text-gray-500 dark:text-gray-400">Status</dt>
               <dd class="mt-1">
                 <span :class="getStatusBadgeClass(job.status)">
                   {{ job.status }}
@@ -30,52 +30,52 @@
               </dd>
             </div>
             <div>
-              <dt class="text-sm text-gray-500">Created At</dt>
-              <dd class="mt-1 text-sm text-gray-900">{{ formatDate(job.created_at) }}</dd>
+              <dt class="text-sm text-gray-500 dark:text-gray-400">Created At</dt>
+              <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ formatDate(job.created_at) }}</dd>
             </div>
             <div>
-              <dt class="text-sm text-gray-500">Started At</dt>
-              <dd class="mt-1 text-sm text-gray-900">{{ formatDate(job.started_at) || '-' }}</dd>
+              <dt class="text-sm text-gray-500 dark:text-gray-400">Started At</dt>
+              <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ formatDate(job.started_at) || '-' }}</dd>
             </div>
             <div>
-              <dt class="text-sm text-gray-500">Completed At</dt>
-              <dd class="mt-1 text-sm text-gray-900">{{ formatDate(job.completed_at) || '-' }}</dd>
+              <dt class="text-sm text-gray-500 dark:text-gray-400">Completed At</dt>
+              <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ formatDate(job.completed_at) || '-' }}</dd>
             </div>
             <div>
-              <dt class="text-sm text-gray-500">Triggered By</dt>
-              <dd class="mt-1 text-sm text-gray-900">{{ job.triggered_by || '-' }}</dd>
+              <dt class="text-sm text-gray-500 dark:text-gray-400">Triggered By</dt>
+              <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ job.triggered_by || '-' }}</dd>
             </div>
           </dl>
         </div>
 
         <!-- Steps -->
         <div v-if="job.steps && job.steps.length > 0">
-          <h4 class="text-sm font-medium text-gray-500 mb-3">Pipeline Steps</h4>
+          <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Pipeline Steps</h4>
           <div class="space-y-3">
             <div
               v-for="(step, index) in sortedSteps"
               :key="step.id"
-              class="border border-gray-200 rounded-lg p-4"
+              class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50"
             >
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center space-x-3">
-                  <span class="flex items-center justify-center w-8 h-8 rounded-full bg-primary-100 text-primary-800 text-sm font-semibold">
+                  <span class="flex items-center justify-center w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-300 text-sm font-semibold">
                     {{ step.step_order }}
                   </span>
-                  <span class="font-medium text-gray-900">{{ step.step_name }}</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ step.step_name }}</span>
                 </div>
                 <span :class="getStepStatusClass(step.status)">
                   {{ step.status }}
                 </span>
               </div>
-              <div class="text-sm text-gray-500 space-y-1">
+              <div class="text-sm text-gray-500 dark:text-gray-400 space-y-1">
                 <div v-if="step.started_at">
                   Started: {{ formatDate(step.started_at) }}
                 </div>
                 <div v-if="step.completed_at">
                   Completed: {{ formatDate(step.completed_at) }}
                 </div>
-                <div v-if="step.error_message" class="text-red-600 mt-2">
+                <div v-if="step.error_message" class="text-red-600 dark:text-red-400 mt-2">
                   <strong>Error:</strong> {{ step.error_message }}
                 </div>
               </div>

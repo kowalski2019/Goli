@@ -1,11 +1,11 @@
 <template>
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="$emit('close')">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-900">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
           Job Logs - #{{ jobId }}
         </h3>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600">
+        <button @click="$emit('close')" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -14,11 +14,11 @@
 
       <div class="flex-1 overflow-hidden flex">
         <!-- Steps Sidebar -->
-        <div class="w-64 border-r border-gray-200 overflow-y-auto bg-gray-50">
+        <div class="w-64 border-r border-gray-200 dark:border-gray-700 overflow-y-auto bg-gray-50 dark:bg-gray-700/50">
           <div class="p-4">
-            <h4 class="text-sm font-semibold text-gray-700 mb-3">Steps</h4>
-            <div v-if="loadingSteps" class="text-sm text-gray-500">Loading...</div>
-            <div v-else-if="steps.length === 0" class="text-sm text-gray-500">No steps found</div>
+            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Steps</h4>
+            <div v-if="loadingSteps" class="text-sm text-gray-500 dark:text-gray-400">Loading...</div>
+            <div v-else-if="steps.length === 0" class="text-sm text-gray-500 dark:text-gray-400">No steps found</div>
             <div v-else class="space-y-2">
               <button
                 v-for="step in steps"
@@ -27,17 +27,17 @@
                 :class="[
                   'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors',
                   selectedStep?.id === step.id 
-                    ? 'bg-primary-100 text-primary-800 border border-primary-300' 
-                    : 'bg-white hover:bg-gray-100 border border-gray-200'
+                    ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-300 border border-primary-300 dark:border-primary-700' 
+                    : 'bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600'
                 ]"
               >
                 <div class="flex items-center justify-between mb-1">
-                  <span class="font-medium">{{ step.step_name }}</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ step.step_name }}</span>
                   <span :class="getStepStatusClass(step.status)">
                     {{ step.status }}
                   </span>
                 </div>
-                <div class="text-xs text-gray-500">
+                <div class="text-xs text-gray-500 dark:text-gray-400">
                   Step {{ step.step_order }}
                 </div>
               </button>
@@ -47,17 +47,17 @@
 
         <!-- Logs Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
-          <div v-if="selectedStep" class="p-4 border-b border-gray-200 bg-gray-50">
+          <div v-if="selectedStep" class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
             <div class="flex items-center justify-between">
               <div>
-                <h4 class="font-semibold text-gray-900">{{ selectedStep.step_name }}</h4>
-                <p class="text-sm text-gray-500">Step {{ selectedStep.step_order }}</p>
+                <h4 class="font-semibold text-gray-900 dark:text-white">{{ selectedStep.step_name }}</h4>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Step {{ selectedStep.step_order }}</p>
               </div>
               <span :class="getStepStatusClass(selectedStep.status)">
                 {{ selectedStep.status }}
               </span>
             </div>
-            <div v-if="selectedStep.error_message" class="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-800">
+            <div v-if="selectedStep.error_message" class="mt-2 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded text-sm text-red-800 dark:text-red-200">
               <strong>Error:</strong> {{ selectedStep.error_message }}
             </div>
           </div>
@@ -76,8 +76,8 @@
           </div>
 
           <!-- Job-level logs -->
-          <div v-if="jobLogs" class="border-t border-gray-200 p-4 bg-gray-50">
-            <h4 class="text-sm font-semibold text-gray-700 mb-2">Job Logs</h4>
+          <div v-if="jobLogs" class="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-700/50">
+            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Job Logs</h4>
             <div class="bg-gray-900 rounded p-3 font-mono text-sm text-green-400 whitespace-pre-wrap max-h-32 overflow-y-auto">
               {{ jobLogs }}
             </div>

@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-700 via-indigo-700 to-blue-700 p-4">
-    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-700 via-indigo-700 to-blue-700 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
+    <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
       <!-- Header -->
       <div class="bg-gradient-to-r from-primary-600 to-primary-700 px-8 py-6">
         <div class="flex flex-col items-center">
@@ -71,14 +71,14 @@
 
         <!-- 2FA Verification Form -->
         <form @submit.prevent="handleVerify" v-else class="space-y-5">
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
             <div class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
               </svg>
-              <div class="text-sm text-blue-800">
+              <div class="text-sm text-blue-800 dark:text-blue-200">
                 <p class="font-medium mb-1">Verification Code Required</p>
-                <p class="text-blue-700">We sent a verification code. Choose a channel and enter the code.</p>
+                <p class="text-blue-700 dark:text-blue-300">We sent a verification code. Choose a channel and enter the code.</p>
               </div>
             </div>
           </div>
@@ -87,7 +87,7 @@
             <select
               v-model="channel"
               :disabled="loading"
-              class="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white disabled:bg-gray-50 disabled:cursor-not-allowed"
+              class="w-full px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
             >
               <option v-for="c in channels" :key="c" :value="c">
                 {{ c === 'email' ? '📧 Email' : c === 'sms' ? '📱 SMS' : c.toUpperCase() }}
@@ -105,7 +105,7 @@
               placeholder="000000"
               required
               :disabled="loading"
-              class="w-full px-4 py-2.5 text-center text-lg tracking-widest font-mono border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white disabled:bg-gray-50 disabled:cursor-not-allowed"
+              class="w-full px-4 py-2.5 text-center text-lg tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
             />
           </FormField>
 
@@ -129,7 +129,7 @@
           <button
             type="button"
             @click="step = 'login'; error = ''"
-            class="w-full text-sm text-gray-600 hover:text-gray-800 py-2"
+            class="w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 py-2"
           >
             ← Back to login
           </button>

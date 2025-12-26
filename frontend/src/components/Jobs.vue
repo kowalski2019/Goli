@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-3xl font-bold text-white mb-1">Jobs</h2>
-        <p class="text-gray-300 text-sm">Monitor and manage your CI/CD jobs</p>
+        <h2 class="text-3xl font-bold text-white dark:text-gray-100 mb-1">Jobs</h2>
+        <p class="text-gray-300 dark:text-gray-400 text-sm">Monitor and manage your CI/CD jobs</p>
       </div>
       <button
         @click="showCreateModal = true"
@@ -29,18 +29,18 @@
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        <p class="text-gray-500 text-sm">Loading jobs...</p>
+        <p class="text-gray-500 dark:text-gray-400 text-sm">Loading jobs...</p>
       </div>
 
       <!-- Empty State -->
       <div v-else-if="jobs.length === 0" class="flex flex-col items-center justify-center py-12">
-        <div class="p-4 bg-gray-100 rounded-full mb-4">
-          <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="p-4 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+          <svg class="w-12 h-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
         </div>
-        <h3 class="text-lg font-semibold text-gray-900 mb-1">No jobs found</h3>
-        <p class="text-gray-500 text-sm mb-4">Create a new job to get started!</p>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">No jobs found</h3>
+        <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">Create a new job to get started!</p>
         <button @click="showCreateModal = true" class="btn btn-primary">
           Create Your First Job
         </button>
@@ -49,9 +49,9 @@
       <!-- Jobs Table -->
       <div v-else class="overflow-x-auto scrollbar-thin">
         <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
+          <thead class="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                 ID
               </th>
               <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -71,34 +71,34 @@
               </th>
             </tr>
           </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
+          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             <tr
               v-for="job in jobs"
               :key="job.id"
-              class="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
+              class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 cursor-pointer"
               @click="selectJob(job)"
             >
               <td class="px-6 py-4 whitespace-nowrap">
-                <span class="text-sm font-medium text-gray-900">#{{ job.id }}</span>
+                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">#{{ job.id }}</span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center gap-2">
-                  <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
-                  <span class="text-sm font-medium text-gray-900">{{ job.name }}</span>
+                  <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ job.name }}</span>
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <StatusBadge :status="job.status" />
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span class="text-sm text-gray-500">
+                <span class="text-sm text-gray-500 dark:text-gray-400">
                   {{ formatDate(job.started_at) }}
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span class="text-sm text-gray-500">
+                <span class="text-sm text-gray-500 dark:text-gray-400">
                   {{ formatDate(job.completed_at) }}
                 </span>
               </td>
@@ -106,7 +106,7 @@
                 <div class="flex items-center justify-end gap-2" @click.stop>
                   <button
                     @click.stop="viewJobDetails(job.id)"
-                    class="text-primary-600 hover:text-primary-800 hover:bg-primary-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                    class="text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/30 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -116,7 +116,7 @@
                   </button>
                   <button
                     @click.stop="viewJobLogs(job.id)"
-                    class="text-primary-600 hover:text-primary-800 hover:bg-primary-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                    class="text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/30 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -127,7 +127,7 @@
                     v-if="job.status === 'pending' || job.status === 'running'"
                     @click.stop="cancelJob(job.id)"
                     :disabled="isCancelling === job.id"
-                    class="text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                    class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                   >
                     <svg
                       v-if="isCancelling === job.id"

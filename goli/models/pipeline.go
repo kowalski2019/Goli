@@ -4,12 +4,13 @@ import "time"
 
 // Pipeline represents a deployment pipeline definition
 type Pipeline struct {
-	ID          int64     `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description,omitempty"`
-	Definition  string    `json:"definition"` // YAML or JSON string
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID          int64                  `json:"id"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description,omitempty"`
+	Definition  string                 `json:"definition"`          // YAML or JSON string
+	Variables   map[string]interface{} `json:"variables,omitempty"` // Variables and secrets (secrets are masked)
+	CreatedAt   time.Time              `json:"created_at"`
+	UpdatedAt   time.Time              `json:"updated_at"`
 }
 
 // PipelineDefinition represents the parsed pipeline structure

@@ -26,9 +26,9 @@
           accept=".yaml,.yml"
           required
           :disabled="loading"
-          class="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white disabled:bg-gray-50 disabled:cursor-not-allowed file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+          class="w-full px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:bg-gray-50 dark:disabled:bg-gray-800 disabled:cursor-not-allowed file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 dark:file:bg-primary-900/50 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100 dark:hover:file:bg-primary-900"
         />
-        <div v-if="formData.file" class="mt-2 text-sm text-gray-600 flex items-center gap-2">
+        <div v-if="formData.file" class="mt-2 text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
@@ -36,17 +36,17 @@
         </div>
       </FormField>
 
-      <div class="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+      <div class="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
         <input
           v-model="formData.runImmediately"
           type="checkbox"
           id="runImmediately"
           :disabled="loading"
-          class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+          class="mt-1 h-4 w-4 text-primary-600 dark:text-primary-400 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
         />
-        <label for="runImmediately" class="text-sm text-gray-700 cursor-pointer">
+        <label for="runImmediately" class="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
           <span class="font-medium">Run pipeline immediately after upload</span>
-          <p class="text-xs text-gray-500 mt-0.5">The pipeline will start executing as soon as it's uploaded</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">The pipeline will start executing as soon as it's uploaded</p>
         </label>
       </div>
 

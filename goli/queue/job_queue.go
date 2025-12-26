@@ -205,7 +205,7 @@ func (q *JobQueue) processJob(job *models.Job) {
 
 	// Execute pipeline if pipeline_id is provided
 	if job.PipelineID != nil {
-		pipelineRecord, err := database.GetPipeline(*job.PipelineID)
+		pipelineRecord, err := database.GetPipelineWithSecrets(*job.PipelineID)
 		if err != nil {
 			log.Printf("Error loading pipeline: %v", err)
 			database.UpdateJobStatus(job.ID, models.JobStatusFailed, "Failed to load pipeline: "+err.Error())
@@ -218,6 +218,11 @@ func (q *JobQueue) processJob(job *models.Job) {
 			log.Printf("Error parsing pipeline definition: %v", err)
 			database.UpdateJobStatus(job.ID, models.JobStatusFailed, "Failed to parse pipeline: "+err.Error())
 			return
+		}
+
+		// Substitute variables in pipeline definition
+		if pipelineRecord.Variables != nil && len(pipelineRecord.Variables) > 0 {
+			pipeline.SubstituteVariables(pipelineDef, pipelineRecord.Variables)
 		}
 
 		// Execute the pipeline

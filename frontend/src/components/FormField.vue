@@ -5,17 +5,17 @@
       :for="id"
       :class="[
         'block text-sm font-medium',
-        required ? 'text-gray-900' : 'text-gray-700',
+        required ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300',
         labelClass
       ]"
     >
       {{ label }}
-      <span v-if="required" class="text-red-500 ml-0.5">*</span>
-      <span v-if="hint" class="text-gray-500 font-normal ml-1">({{ hint }})</span>
+      <span v-if="required" class="text-red-500 dark:text-red-400 ml-0.5">*</span>
+      <span v-if="hint" class="text-gray-500 dark:text-gray-400 font-normal ml-1">({{ hint }})</span>
     </label>
     <div class="relative">
       <slot />
-      <div v-if="description" class="mt-1.5 text-xs text-gray-500">
+      <div v-if="description" class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
         {{ description }}
       </div>
     </div>

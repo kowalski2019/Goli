@@ -15,7 +15,8 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
 
@@ -32,20 +33,27 @@
   
   .btn-secondary {
     @apply bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-500;
+    @apply dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600;
   }
   
   .btn-danger {
     @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+    @apply dark:bg-red-700 dark:hover:bg-red-600;
   }
   
   .card {
     @apply bg-white rounded-xl shadow-md p-6 border border-gray-100;
+    @apply dark:bg-gray-800 dark:border-gray-700;
   }
   
   /* Smooth scrollbar */
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: rgb(203 213 225) transparent;
+  }
+  
+  .dark .scrollbar-thin {
+    scrollbar-color: rgb(75 85 99) transparent;
   }
   
   .scrollbar-thin::-webkit-scrollbar {
@@ -62,8 +70,16 @@
     border-radius: 3px;
   }
   
+  .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgb(75 85 99);
+  }
+  
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background-color: rgb(148 163 184);
+  }
+  
+  .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(107 114 128);
   }
 }
 
