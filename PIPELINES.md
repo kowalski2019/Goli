@@ -15,9 +15,62 @@ steps:
     action: "action-name"
     config:
       # Step-specific configuration
+      # You can use variables: ${VAR_NAME} or {{VAR_NAME}}
     retry: 1                    # Optional: retry attempts (default: 1)
     on_failure: "stop"         # Optional: "stop" or "continue" (default: "stop")
 ```
+
+## Variables and Secrets
+
+Pipelines support variables and secrets that can be used throughout the pipeline definition. This allows you to:
+- Keep sensitive values (API keys, passwords) out of your git repository
+- Reuse common values across multiple pipelines
+- Easily update values without editing YAML files
+
+### Using Variables
+
+Variables can be referenced in your pipeline YAML using either syntax:
+- `${VAR_NAME}` - Standard variable syntax
+- `{{VAR_NAME}}` - Alternative syntax
+
+**Example:**
+```yaml
+name: "Deploy Application"
+steps:
+  - name: "Pull Image"
+    type: "docker"
+    action: "pull"
+    config:
+      image: "${IMAGE_NAME}:${IMAGE_TAG}"
+  
+  - name: "Run Container"
+    type: "docker"
+    action: "run"
+    config:
+      container: "${CONTAINER_NAME}"
+      image: "${IMAGE_NAME}:${IMAGE_TAG}"
+      env:
+        DATABASE_URL: "${DATABASE_URL}"
+        API_KEY: "${API_SECRET_KEY}"
+```
+
+Variables are substituted at execution time, so secrets are never exposed in logs or stored in git.
+
+### Managing Variables
+
+Variables can be managed through the UI:
+1. When creating or editing a pipeline, use the **Variables & Secrets** section
+2. Click **Add Variable** to create a new variable
+3. Enter the variable name (e.g., `DATABASE_URL`)
+4. Enter the value
+5. Check **Mark as secret** to mask the value (it will be hidden in the UI)
+6. Variables marked as secrets are preserved when editing (you must enter a new value to update them)
+
+**Best Practices:**
+- Use secrets for sensitive data (passwords, API keys, tokens)
+- Use regular variables for non-sensitive configuration (image names, ports, etc.)
+- Use descriptive variable names (e.g., `DATABASE_URL` instead of `DB`)
+- Keep variable names in UPPERCASE for consistency
 
 ## Step Types
 
@@ -251,13 +304,36 @@ steps:
 
 ## Creating Pipelines
 
-### Via UI
+### Via UI Editor (Recommended)
+
+The Goli UI provides a full-featured code editor with syntax highlighting and indentation support:
 
 1. Navigate to **Pipelines** tab
-2. Click **+ Upload Pipeline**
+2. Click **Create Pipeline** button
+3. Enter pipeline name and description
+4. Write or paste your YAML definition in the code editor
+   - The editor provides YAML syntax highlighting
+   - Auto-indentation and code formatting
+   - Dark/light theme toggle
+5. Add variables and secrets in the **Variables & Secrets** section (optional)
+6. Click **Create Pipeline** to save
+
+**Editing Pipelines:**
+1. Navigate to **Pipelines** tab
+2. Click **Edit** next to the pipeline you want to modify
+3. Make your changes in the full-page editor
+4. Update variables if needed (secrets are preserved unless you enter a new value)
+5. Click **Save Changes**
+
+### Via UI Upload
+
+1. Navigate to **Pipelines** tab
+2. Click **Upload YAML** button
 3. Select your YAML file
 4. Optionally provide name and description
 5. Click **Upload & Create**
+
+**Note:** After uploading, you can edit the pipeline using the full-page editor.
 
 ### Via API
 
@@ -309,8 +385,10 @@ curl -X POST \
 2. **Handle failures gracefully**: Use `on_failure: "continue"` for optional steps
 3. **Add retries**: For network operations, add retry logic
 4. **Health checks**: Always verify deployment success
-5. **Environment variables**: Use env vars for sensitive data
+5. **Use Variables & Secrets**: Store sensitive data as secrets, not in YAML
 6. **Idempotency**: Design steps to be safely re-runnable
+7. **Version control**: Keep pipeline YAML in git, but exclude secrets
+8. **Documentation**: Add descriptions to pipelines and steps for clarity
 
 ## Troubleshooting
 
